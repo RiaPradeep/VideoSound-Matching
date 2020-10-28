@@ -101,7 +101,6 @@ class AudioCNN(nn.Module):
         audio1_enc = self.audio(audio1.unsqueeze(1))
         audio2_enc = self.audio(audio2.unsqueeze(1))
         video_enc = self.video_enc(video.type(torch.FloatTensor))
-        audio_enc = torch.cat([audio1_enc, audio2_enc], dim=-1)
-
+        audio_enc = torch.cat([audio1_enc, audio2_enc, video_enc], dim=-1)
         class_val = self.classifier(audio_enc.reshape(b, -1), video)
         return class_val
