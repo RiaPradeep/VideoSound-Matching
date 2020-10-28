@@ -76,6 +76,8 @@ def main(num_epochs, batch_size):
             target = target.to(device)
             output = audio_cnn(audio1, audio2, video)
             loss = cross_entropy(output, target)
+            _, predicted = torch.max(output.data, 1)
+            correct += (predicted == target).sum().item()
 
 
             optimizer.step()
