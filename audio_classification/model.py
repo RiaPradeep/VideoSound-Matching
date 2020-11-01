@@ -15,7 +15,7 @@ def conv1d_output_size(seq_len, padding, kernel_size, stride):
     return outshape
 
 class CNN3D(nn.Module):
-    def __init__(self, t_dim=50, img_x=360, img_y=360, drop_p=0.2, fc_hidden1=256, fc_hidden2=128):
+    def __init__(self, t_dim=50, img_x=360, img_y=360, drop_p=0.2, fc_hidden1=128, fc_hidden2=128):
         super(CNN3D, self).__init__()
         # set video dimension
         self.t_dim = t_dim
@@ -24,7 +24,7 @@ class CNN3D(nn.Module):
         # fully connected layer hidden nodes
         self.fc_hidden1, self.fc_hidden2 = fc_hidden1, fc_hidden2
         self.drop_p = drop_p
-        self.ch1, self.ch2 = 32, 48
+        self.ch1, self.ch2 = 8, 16
         self.k1, self.k2 = (5, 5, 5), (3, 3, 3)  # 3d kernel size
         self.s1, self.s2 = (2, 2, 2), (2, 2, 2)  # 3d strides
         self.pd1, self.pd2 = (0, 0, 0), (0, 0, 0)  # 3d padding
@@ -69,39 +69,38 @@ class AudioCNN(nn.Module):
     def __init__(self, num_classes, in_size = 44100):
         super(AudioCNN, self).__init__()
         self.video_enc = CNN3D()
-        # in_channels = [1, 64, 128, 256, 512]
-        # kernel_size = 80
-        # stride = 4
-        # padding = 2
+        in_channels = [1, 64, 128]
+        kernel_size = 80
+        stride = 8
+        padding = 2
         self.audio = nn.Sequential(
-            nn.Conv1d(1, 64, 80, 4, 2),
+            nn.Conv1d(1, 64, 80, 8, 2),
             nn.BatchNorm1d(64),
             nn.LeakyReLU(0.2, inplace=True),
-            nn.Conv1d(64, 128, 80, 4, 2),
+            nn.Conv1d(64, 128, 80, stride, 2),
             nn.BatchNorm1d(128),
             nn.LeakyReLU(0.2, inplace=True),
-            nn.Conv1d(128, 256, 80, 4, 2),
-            nn.BatchNorm1d(256),
+            nn.Conv1d(128, 64, 80, stride, 2),
+            #nn.BatchNorm1d(256),
             nn.LeakyReLU(0.2, inplace=True),
-            nn.Conv1d(256, 512, 80, 4, 2),
-            nn.BatchNorm1d(512),
-            nn.LeakyReLU(0.2, inplace=True),
-            nn.Conv1d(512, 512, 40, 4, 2),
-            nn.BatchNorm1d(512),
-            nn.LeakyReLU(0.2, inplace=True),
+            #nn.Conv1d(256, 512, 80, 4, 2),
+            #nn.BatchNorm1d(512),
+            #nn.LeakyReLU(0.2, inplace=True),
+            #nn.Conv1d(512, 512, 40, 4, 2),
+            #nn.BatchNorm1d(512),
+            #nn.LeakyReLU(0.2, inplace=True),
         )
-        # out_seq_len = in_size
-        # for i in in_channels:
-        #     out_seq_len = conv1d_output_size(out_seq_len, padding, kernel_size, stride)
+        out_seq_len = in_size
+        for i in in_channels:
+            out_seq_len = conv1d_output_size(out_seq_len, padding, kernel_size, stride)
 
-        out_seq_len = 29
-        self.classifier = nn.Sequential(nn.Linear(self.video_enc.fc_hidden2 + 2 * out_seq_len * 512, 2), nn.Softmax())
+        self.classifier = nn.Sequential(nn.Linear(self.video_enc.fc_hidden2 + 2 * out_seq_len * 64, 2))
 
     def forward(self, audio1, audio2, video):
         b = audio1.shape[0]
-        audio1_enc = torch.flatten(self.audio(audio1.unsqueeze(1)))
-        audio2_enc = torch.flatten(self.audio(audio2.unsqueeze(1)))
+        audio1_enc = self.audio(audio1.unsqueeze(1)).view(b, -1)
+        audio2_enc = self.audio(audio2.unsqueeze(1)).view(b, -1)
         video_type = torch.cuda.FloatTensor if torch.cuda.is_available() else torch.FloatTensor
-        video_enc = torch.flatten(self.video_enc(video.type(video_type)))
-        encoding = torch.cat([audio1_enc, audio2_enc, video_enc], dim=0).reshape(b, -1)
+        video_enc = self.video_enc(video.type(video_type)).view(b, -1)
+        encoding = torch.cat([audio1_enc, audio2_enc, video_enc], dim=-1)
         return self.classifier(encoding)
