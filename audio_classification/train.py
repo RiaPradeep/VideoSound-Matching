@@ -1,5 +1,8 @@
 import argparse
 
+import csv
+import os
+
 import torch
 
 from audio import get_audio_dataset
@@ -34,14 +37,16 @@ class Dataset(torch.utils.data.Dataset):
     label = self.labels[index]
 
     if(label==0):
-        return self.dset1[id1][0][0], self.dset2[id2][0][0], self.dset1[id1][0][1], torch.tensor([1, 0])
+        return self.dset1[id1][0][0], self.dset2[id2][0][0], self.dset1[id1][0][1], torch.tensor(0)
     else:
-        return self.dset1[id1][0][0], self.dset2[id2][0][0], self.dset2[id2][0][1], torch.tensor([0, 1])
+        return self.dset1[id1][0][0], self.dset2[id2][0][0], self.dset2[id2][0][1], torch.tensor(1)
 
   def __len__(self):
     return self.total_length
 
 def main(num_epochs, batch_size):
+    print(device)
+    torch.device(device)
     dataset = get_audio_dataset(
         data_directory, max_length_in_seconds=1, pad_and_truncate=True
     )
@@ -56,55 +61,68 @@ def main(num_epochs, batch_size):
     test_dataset = Dataset(test_dataset)
 
     train_dataloader = torch.utils.data.DataLoader(
-        train_dataset, batch_size=batch_size, num_workers=1
+        train_dataset, batch_size=batch_size, num_workers=4, pin_memory=True
     )
     test_dataloader = torch.utils.data.DataLoader(
-        test_dataset, batch_size=5, num_workers=1
+        test_dataset, batch_size=batch_size, num_workers=4, pin_memory=True
     )
     train_dataloader_len = len(train_dataloader)
     test_dataloader_len = len(test_dataloader)
-    audio_cnn = AudioCNN(len(dataset.classes)).to(device)
+    audio_cnn = AudioCNN(len(dataset.classes))
+    audio_cnn = audio_cnn.to(device)
     cross_entropy = torch.nn.CrossEntropyLoss()
+    cross_entropy = cross_entropy.to(device)
     optimizer = torch.optim.Adam(audio_cnn.parameters())
-    for epoch in range(num_epochs):
-        audio_cnn.train()
-        for sample_idx, (audio1, audio2, video, target) in enumerate(train_dataloader):
-            audio_cnn.zero_grad()
-            audio1 = audio1.to(device)
-            audio2 = audio2.to(device)
-            video = video.to(device)
-            target = target.to(device)
-            output = audio_cnn(audio1, audio2, video)
-            loss = cross_entropy(output, target)
-            _, predicted = torch.max(output.data, 1)
-            correct += (predicted == target).sum().item()
 
+    with open('results.csv', 'w', newline='') as f:
+        writer = csv.writer(f)
+        writer.writerow(["epoch", "train loss", "train accuracy", "test loss", "test accuracy"])
 
-            optimizer.step()
-
-            print(
-                f"{epoch:06d}-[{sample_idx + 1}/{train_dataloader_len}]: {loss.mean().item()}"
-            )
-
-        test_loss = 0
-        correct = 0
-        total = 0
-
-        with torch.no_grad():
-            for sample_idx, (audio, target) in enumerate(test_dataloader):
-                audio, target = audio.to(device), target.to(device)
-
-                output = audio_cnn(audio)
-                test_loss += cross_entropy(output, target)
-
+        for epoch in range(num_epochs):
+            audio_cnn.train()
+            train_loss = 0
+            train_correct = 0
+            for sample_idx, (audio1, audio2, video, target) in enumerate(train_dataloader):
+                b = audio1.shape[0]
+                audio_cnn.zero_grad()
+                audio1, audio2, video, target = audio1.to(device), audio2.to(device), video.to(device), target.to(device)
+                output = audio_cnn(audio1, audio2, video)
+                loss = cross_entropy(output, torch.flatten(target))
+                train_loss += b * loss.mean().item()
                 _, predicted = torch.max(output.data, 1)
-                total += target.size(0)
-                correct += (predicted == target).sum().item()
+                predicted = predicted.to(device)
+                train_correct += (predicted == target).sum().item()
 
-            print(f"Evaluation loss: {test_loss.mean().item() / test_dataloader_len}")
-            print(f"Evaluation accuracy: {100 * correct / total}")
+                loss.backward()
+                optimizer.step()
+
+                print(
+                    f"{epoch:06d}-[{sample_idx + 1}/{train_dataloader_len}]: {loss.mean().item()}"
+                )
+
+            test_loss = 0
+            test_correct = 0
+            total = 0
+
+            with torch.no_grad():
+                for sample_idx, (audio1, audio2, video, target) in enumerate(test_dataloader):
+                    b = audio1.shape[0]
+                    audio1, audio2, video, target = audio1.to(device), audio2.to(device), video.to(device), target.to(device)
+
+                    output = audio_cnn(audio1, audio2, video)
+                    test_loss += b * cross_entropy(output, torch.flatten(target)).mean().item()
+
+                    _, predicted = torch.max(output.data, 1)
+                    predicted = predicted.to(device)
+                    total += target.size(0)
+                    test_correct += (predicted == target).sum().item()
+
+                print(f"Evaluation loss: {test_loss / test_dataloader_len}")
+                print(f"Evaluation accuracy: {100 * test_correct / total}")
+            
+            writer.writerow([epoch, (train_loss / train_dataloader_len), (100 * train_correct / train_dataloader_len), (test_loss / test_dataloader_len), (100 * test_correct / test_dataloader_len)])
 
 
 if __name__ == "__main__":
     device = "cuda" if torch.cuda.is_available() else "cpu"
-    main(num_epochs=1, batch_size=2)
+    main(num_epochs=100, batch_size=6)

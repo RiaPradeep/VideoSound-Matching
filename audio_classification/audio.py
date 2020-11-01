@@ -18,7 +18,7 @@ def audio_loader(path, max_length_in_seconds, pad_and_truncate):
     max_length_video = int(info['video_fps'] * max_length_in_seconds)
     vframe = transform(vframe.permute(0, 3, 1, 2))
     aframe = aframe[0, :max_length_audio]
-    vframe = vframe[:100].permute(1, 0, 2, 3)
+    vframe = vframe[:50].permute(1, 0, 2, 3)
     return aframe, vframe
 
 

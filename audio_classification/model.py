@@ -10,12 +10,12 @@ def conv3D_output_size(img_size, padding, kernel_size, stride):
                 np.floor((img_size[2] + 2 * padding[2] - (kernel_size[2] - 1) - 1) / stride[2] + 1).astype(int))
     return outshape
     
-def conv1d_output_size(seq_len,  padding, kernel_size, stride):
+def conv1d_output_size(seq_len, padding, kernel_size, stride):
     outshape = (np.floor((seq_len + 2 * padding - (kernel_size - 1) - 1) / stride + 1).astype(int))
     return outshape
 
 class CNN3D(nn.Module):
-    def __init__(self, t_dim=100, img_x=360, img_y=360, drop_p=0.2, fc_hidden1=256, fc_hidden2=128):
+    def __init__(self, t_dim=50, img_x=360, img_y=360, drop_p=0.2, fc_hidden1=256, fc_hidden2=128):
         super(CNN3D, self).__init__()
         # set video dimension
         self.t_dim = t_dim
@@ -69,10 +69,10 @@ class AudioCNN(nn.Module):
     def __init__(self, num_classes, in_size = 44100):
         super(AudioCNN, self).__init__()
         self.video_enc = CNN3D()
-        in_channels = [1, 64, 128, 256, 512]
-        kernel_size = 80
-        stride = 4
-        padding = 2
+        # in_channels = [1, 64, 128, 256, 512]
+        # kernel_size = 80
+        # stride = 4
+        # padding = 2
         self.audio = nn.Sequential(
             nn.Conv1d(1, 64, 80, 4, 2),
             nn.BatchNorm1d(64),
@@ -90,17 +90,18 @@ class AudioCNN(nn.Module):
             nn.BatchNorm1d(512),
             nn.LeakyReLU(0.2, inplace=True),
         )
-        out_seq_len = in_size
-        for i in in_channels:
-            out_seq_len = conv1d_output_size(out_seq_len,  padding, kernel_size, stride)
+        # out_seq_len = in_size
+        # for i in in_channels:
+        #     out_seq_len = conv1d_output_size(out_seq_len, padding, kernel_size, stride)
 
-        self.classifier = nn.Sequential(nn.Linear(2*self.video_enc.fc_hidden2 + out_seq_len * 512, 2), nn.Softmax())
+        out_seq_len = 29
+        self.classifier = nn.Sequential(nn.Linear(self.video_enc.fc_hidden2 + 2 * out_seq_len * 512, 2), nn.Softmax())
 
     def forward(self, audio1, audio2, video):
         b = audio1.shape[0]
-        audio1_enc = self.audio(audio1.unsqueeze(1))
-        audio2_enc = self.audio(audio2.unsqueeze(1))
-        video_enc = self.video_enc(video.type(torch.FloatTensor))
-        audio_enc = torch.cat([audio1_enc, audio2_enc, video_enc], dim=-1)
-        class_val = self.classifier(audio_enc.reshape(b, -1), video)
-        return class_val
+        audio1_enc = torch.flatten(self.audio(audio1.unsqueeze(1)))
+        audio2_enc = torch.flatten(self.audio(audio2.unsqueeze(1)))
+        video_type = torch.cuda.FloatTensor if torch.cuda.is_available() else torch.FloatTensor
+        video_enc = torch.flatten(self.video_enc(video.type(video_type)))
+        encoding = torch.cat([audio1_enc, audio2_enc, video_enc], dim=0).reshape(b, -1)
+        return self.classifier(encoding)
