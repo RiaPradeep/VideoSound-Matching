@@ -81,14 +81,7 @@ class AudioCNN(nn.Module):
             nn.BatchNorm1d(128),
             nn.LeakyReLU(0.2, inplace=True),
             nn.Conv1d(128, 64, 80, stride, 2),
-            #nn.BatchNorm1d(256),
             nn.LeakyReLU(0.2, inplace=True),
-            #nn.Conv1d(256, 512, 80, 4, 2),
-            #nn.BatchNorm1d(512),
-            #nn.LeakyReLU(0.2, inplace=True),
-            #nn.Conv1d(512, 512, 40, 4, 2),
-            #nn.BatchNorm1d(512),
-            #nn.LeakyReLU(0.2, inplace=True),
         )
         out_seq_len = in_size
         for i in in_channels:

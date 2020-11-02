@@ -24,7 +24,6 @@ class Dataset(torch.utils.data.Dataset):
     list2 = list(range(total_length))
     self.labels = (torch.rand(total_length) < 0.5).type(torch.IntTensor)
     self.total_length = total_length
-    #print(torch.Tensor(labels, dtype=int))
 
     random.shuffle(list2)
     self.comb_list = list(zip(list1, list2))
