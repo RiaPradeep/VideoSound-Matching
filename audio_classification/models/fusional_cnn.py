@@ -97,3 +97,5 @@ class AudioCNN(nn.Module):
         video_enc = self.video_enc(video.type(video_type)).view(b, -1)
         encoding = torch.cat([audio1_enc, audio2_enc, video_enc], dim=-1)
         return self.classifier(encoding)
+
+
