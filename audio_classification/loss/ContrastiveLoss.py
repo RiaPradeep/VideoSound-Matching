@@ -18,10 +18,16 @@ class ContrastiveLoss(torch.nn.Module):
 class VideoMatchingLoss(torch.nn.Module):
     def __init__(self):
         super(VideoMatchingLoss, self).__init__()
-        self.loss = ContrastiveLoss()
+        self.loss = torch.nn.BCEWithLogitsLoss(size_average=True)
+        self.loss = torch.nn.TripletMarginLoss()
+        #ContrastiveLoss()
     
-    def forward(self, audio1_enc, audio2_enc, video_enc, label):
-        loss1 = self.loss(audio1_enc, video_enc, label)
-        loss2 = self.loss(audio2_enc, video_enc, 1-label)
-        distances = torch.cat([loss1[0], loss2[0]], dim=1)
-        return loss1[1] + loss2[1], distances
+    def forward(self, out, label):
+        # loss = self.loss(out, label)
+        # loss = self.loss(video, positive, negative)
+
+        
+
+        # loss2 = self.loss(audio2_enc, video_enc, label)
+        #distances = torch.cat([loss1[0], loss2[0]], dim=1)
+        return loss
