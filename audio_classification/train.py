@@ -12,6 +12,7 @@ from models.cnn_encoder import AudioCNN
 from loss.ContrastiveLoss import VideoMatchingLoss
 import random
 import itertools
+import numpy as np
 
 torch.backends.cudnn.benchmark = True
 data_directory = "raw"
@@ -33,32 +34,35 @@ waterfall - 75
 class Dataset(torch.utils.data.Dataset):
   def __init__(self, dset):
     super(Dataset, self).__init__()
-    class_list = torch.range(7)
     self.dset = dset
     #class_combs = list(itertools.combinations(class_list, 2)) # all combinations
     #for c1, c2 in class_combs:
     item = []
-    # dset = 
+    total_length = 0
     for i in range(7):
+        pts = torch.tensor(np.random.randint(low=0, high=6, size=len(dset[i])))
+        pts = torch.where(pts>=i, pts + 1, pts)
         for j in range(len(dset[i])):
-            rnd_cls = random.randint(0, 6)
-            rnd_item = random.randint(0, 100)
-            if rnd_cls >= i:
-                rnd_cls = rnd_cls + 1
-            
-            print(i, rnd_cls)
-
-            if random.random(1) > 0.5:
-                item.append((dset[i][j], dset[rnd_cls, rnd_item], 0))
+            first_class = i
+            sec_class = int(pts[j])
+            print(sec_class)
+            first_item = (first_class, j)
+            sec_item = (sec_class, random.randint(0, len(dset[sec_class])))
+            if random.random() > 0.5:
+                item.append((first_item, sec_item, 0))
             else:
-                item.append((dset[rnd_cls, rnd_item], dset[i][j], 1))
+                item.append((sec_item, first_item, 1))
+            total_length += 1
     
     self.item = item
-    # print(self.comb_list)
+    self.total_length = total_length
+
 
   def __getitem__(self, index):
-    a1, v1 = self.item[index][0]
-    a2, v2 = self.item[index][1]
+    first_class, f_item = self.item[index][0]
+    sec_class, s_item = self.item[index][1]
+    a1, v1 = self.dset[first_class][f_item]
+    a2, v2 = self.dset[sec_class][s_item]
     label = self.item[index][2]
 
     if(label==0):
@@ -78,13 +82,15 @@ def main(num_epochs, batch_size):
         data_directory, max_length_in_seconds=1, pad_and_truncate=True
     )
 
+    
+
+    dataset = Dataset(dataset)
     dataset_len = len(dataset)
     train_len = round(dataset_len * 0.8)
     test_len = dataset_len - train_len
-    dataset = Dataset(dataset)
     #, Dataset(test_split)
 
-    train_split, test_split = torch.utils.data.random_split(
+    train_dataset, test_dataset = torch.utils.data.random_split(
         dataset, [int(train_len), int(test_len)]
     )
 
@@ -105,14 +111,16 @@ def main(num_epochs, batch_size):
         writer.writerow(["epoch", "train loss", "train accuracy", "test loss", "test accuracy"])
         
         for epoch in range(num_epochs):
+            '''
             total_length = train_dataset.dset1.__len__()
+            
             list1 = list(range(total_length))
             list2 = list(range(total_length))
             train_dataset.labels = (torch.rand(total_length) < 0.5).type(torch.IntTensor)
             train_dataset.total_length = total_length
             random.shuffle(list2)
             train_dataset.comb_list = list(zip(list1, list2))
-
+            '''
             audio_cnn.train()
             train_loss = 0
             train_correct = 0
@@ -121,8 +129,7 @@ def main(num_epochs, batch_size):
                 optimizer.zero_grad()
                 # audio1, audio2, video, target = audio1.to(device), audio2.to(device), video.to(device), target.to(device)
                 audio1, video, target = audio1.to(device), video.to(device), target.to(device)
-                # audio1_enc, audio2_enc, video_enc = audio_cnn(audio1, audio2, video)
-                diff = audio_cnn(audio1, video)
+                audio1_enc, audio2_enc, video_enc = audio_cnn(audio1, audio2, video)
                 loss, pred = loss_fn(audio1_enc, audio2_enc, video_enc, target)
                 loss.backward()
                 optimizer.step()
@@ -172,7 +179,7 @@ def main(num_epochs, batch_size):
 
 def get_arguments():
     parser = argparse.ArgumentParser(description='Training')
-    parser.add_argument('--model', type=str, default='cnn')
+    parser.add_argument('--model', type=str, default='cnn_encoder')
     return parser.parse_args()
 
 

@@ -98,6 +98,5 @@ class AudioCNN(nn.Module):
         video_type = torch.cuda.FloatTensor if torch.cuda.is_available() else torch.FloatTensor
         video_enc = self.video_enc(video.type(video_type)).view(b, -1)
         
-        
         #encoding = torch.cat([audio1_enc, audio2_enc, video_enc], dim=-1)
         return (audio1_enc, audio2_enc, video_enc)

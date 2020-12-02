@@ -90,12 +90,13 @@ class AudioCNN(nn.Module):
         self.out = nn.Linear(self.video_enc.fc_hidden2, self.video_enc.fc_hidden2)
         self.out2 = nn.Linear(self.video_enc.fc_hidden2, 1)
 
-    def forward(self, audio1, video):
+    def forward(self, audio1, audio2, video):
         b = audio1.shape[0]
         audio1_enc = self.linear(self.audio(audio1).view(b, -1))
-        # audio2_enc = self.linear(self.audio(audio2).view(b, -1))
+        audio2_enc = self.linear(self.audio(audio2).view(b, -1))
         video_type = torch.cuda.FloatTensor if torch.cuda.is_available() else torch.FloatTensor
         video_enc = self.video_enc(video.type(video_type)).view(b, -1)
         video_out = self.out(video_enc)
-        audio_out = self.out(audio1_enc)
-        return self.out2(video_out - audio_out)
+        audio1_out = self.out(audio1_enc)
+        audio2_out = self.out(audio2_enc)
+        return audio1_out, audio2_out, video_out
