@@ -29,6 +29,5 @@ class AudioEnc(nn.Module):
 
     def forward(self, x):
         b = x.size(0)
-        print(x.shape)
         x = self.audio(x).view(b, -1)
         return self.out(x)

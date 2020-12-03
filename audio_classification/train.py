@@ -13,6 +13,7 @@ from loss.TripletLoss import VideoMatchingLoss
 import random
 import itertools
 import numpy as np
+from tqdm import tqdm
 
 torch.backends.cudnn.benchmark = True
 data_directory = "raw"
@@ -61,7 +62,6 @@ class Dataset(torch.utils.data.Dataset):
     label = self.item[index][2]
     first_class, f_item = self.item[index][0]
     sec_class, s_item = self.item[index][1]
-    print(label, len(self.dset[first_class]),  f_item, len(self.dset[sec_class]), s_item)
     a1, v1 = self.dset[first_class][f_item]
     a2, v2 = self.dset[sec_class][s_item]
     if(label==0):
@@ -93,10 +93,10 @@ def main(num_epochs, batch_size):
     )
 
     train_dataloader = torch.utils.data.DataLoader(
-        train_dataset, batch_size=batch_size, shuffle=True, num_workers=1, pin_memory=True
+        train_dataset, batch_size=batch_size, shuffle=True, num_workers=8, pin_memory=True
     )
     test_dataloader = torch.utils.data.DataLoader(
-        test_dataset, batch_size=batch_size, shuffle=True, num_workers=1, pin_memory=True
+        test_dataset, batch_size=batch_size, shuffle=True, num_workers=8, pin_memory=True
     )
     train_dataloader_len = len(train_dataloader)
     model = Model(audio_size = eg_data[0].size(), video_size=eg_data[1].size())
@@ -108,7 +108,7 @@ def main(num_epochs, batch_size):
         writer = csv.writer(f)
         writer.writerow(["epoch", "train loss", "train accuracy", "test loss", "test accuracy"])
         
-        for epoch in range(num_epochs):
+        for epoch in tqdm(range(num_epochs)):
             '''
             total_length = train_dataset.dset1.__len__()
             
@@ -122,7 +122,7 @@ def main(num_epochs, batch_size):
             model.train()
             train_loss = 0
             train_correct = 0
-            for sample_idx, (audio1, audio2, video, target) in enumerate(train_dataloader):
+            for sample_idx, (audio1, audio2, video, target) in tqdm(enumerate(train_dataloader)):
                 b = audio1.shape[0]
                 optimizer.zero_grad()
                 # audio1, audio2, video, target = audio1.to(device), audio2.to(device), video.to(device), target.to(device)
@@ -135,7 +135,7 @@ def main(num_epochs, batch_size):
                 train_loss += b * loss.mean().item()
                 predicted = torch.argmin(pred, dim=1)
                 train_correct += (predicted == target).sum().item()
-
+                print(torch.max(predicted), torch.min(predicted), torch.max(target), torch.min(target))
                 print(
                     f"{epoch:06d}-[{sample_idx + 1}/{train_dataloader_len}]: {loss.mean().item()} : {train_correct}"
                 )
@@ -166,6 +166,7 @@ def main(num_epochs, batch_size):
                     loss, pred = loss_fn(audio1_enc, audio2_enc, video_enc, target)
                     test_loss += b * loss.mean().item()
                     predicted = torch.argmin(pred, dim=1)
+                    print(predicted, target)
                     test_correct += (predicted == target).sum().item()
 
                 print(f"Evaluation loss: {test_loss / test_dataset.__len__()}")
@@ -185,4 +186,4 @@ if __name__ == "__main__":
     device = "cuda" if torch.cuda.is_available() else "cpu"
     hparams = get_arguments()
     Model = importlib.import_module(f"models.{hparams.model}").Model
-    main(num_epochs=50, batch_size=1)
+    main(num_epochs=50, batch_size=8)
