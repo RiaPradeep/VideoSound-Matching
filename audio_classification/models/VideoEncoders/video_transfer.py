@@ -1,5 +1,6 @@
 # TODO does this work?
 import torch
+import torchvision
 import torch.nn as nn
 import numpy as np
 import torch.nn.functional as F
@@ -14,7 +15,7 @@ class VideoEnc(nn.Module):
         self.t_dim = v_shape[0]
         self.img_x = v_shape[1]
         self.img_y = v_shape[2]
-        self.resnet = torchvision.models.video.r3d_18(pretrained=True, progress=True)
+        self.resnet = torchvision.models.video.r3d_18(pretrained=False, progress=True)
         self.video_enc = nn.Sequential(
             self.resnet.stem,
             self.resnet.layer1,
@@ -31,6 +32,7 @@ class VideoEnc(nn.Module):
     def forward(self, video):
         b = video.size(0)
         x = self.video_enc(video).view(b, -1)
+        print(x.shape)
         x = F.relu(self.fc1(x))
         x = F.relu(self.fc2(x))
         x = F.dropout(x, p=self.drop_p, training=self.training)
