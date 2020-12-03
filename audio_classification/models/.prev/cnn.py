@@ -66,10 +66,11 @@ class CNN3D(nn.Module):
 
         return x
 
-class AudioCNN(nn.Module):
-    def __init__(self, num_classes=2, in_size = 44100, channel1=1, channel2=64, channel3=128, 
+class Model(nn.Module):
+    def __init__(self, audio_size = (257, 690), video_size=(48, 360, 360),
+                num_classes=2, in_size = 44100, channel1=1, channel2=64, channel3=128, 
                     kernel_size=80, padding=2, stride=8):
-        super(AudioCNN, self).__init__()
+        super(Model, self).__init__()
         self.video_enc = CNN3D()
         #in_channels = [1, 64, 128]
         in_channels = [channel1, channel2, channel3]

@@ -16,19 +16,14 @@ def resize_video(video, size=(360, 360), interpolation=2):
     for frame in video:
         yield transform(frame)
 
-def audio_loader(path, max_length_in_seconds, pad_and_truncate):
+def audio_video_loader(path, max_length_in_seconds, pad_and_truncate):
     # audio works with pts?
     max_length_in_seconds = 2
-
     data_class = path.split("/")[1]
-
     vframe, aframe, info = torchvision.io.read_video(path, start_pts=0, end_pts=47500 * max_length_in_seconds, pts_unit="pts")
     aframe = aframe[0]
-    #
-    
     vframe = vframe.permute(0, 3, 1, 2)
     # current shape of vframe is T, C, H, W
-    print(vframe.shape)
     max_length_audio = int(info['audio_fps'] * max_length_in_seconds)
     max_length_video = 24 * max_length_in_seconds # average of 24 fps
     vframe = torch.stack(list(resize_video(vframe)), dim=0) # T, C, H, W
@@ -36,9 +31,7 @@ def audio_loader(path, max_length_in_seconds, pad_and_truncate):
         print("audio short -", path)
     if vframe.shape[0] < max_length_video:
         print("video short -", path)
-    
     # pad if necessery
-    
     diff_video = max(0, max_length_video-vframe.shape[0])
     diff_audio = max(0, (max_length_audio-aframe.shape[0]))
     vframe = torch.cat([vframe, torch.zeros((diff_video, vframe.shape[1], vframe.shape[2], vframe.shape[3]))], dim=0)
@@ -47,7 +40,6 @@ def audio_loader(path, max_length_in_seconds, pad_and_truncate):
     aframe = aframe[:max_length_audio]
     # convert to stft
     aframe = torch.stft(aframe, n_fft=512).permute(2, 0, 1)
-    torchvision.io.write_video("VV.mp4", vframe.permute(1, 2, 3, 0), fps=info['video_fps'])
     return aframe, vframe
 
 
@@ -63,9 +55,9 @@ class SingleDataset(torch.utils.data.Dataset):
     def __getitem__(self, idx):
         return self.loader_func(self.all_files[idx])
 
-def get_audio_dataset(datafolder, max_length_in_seconds=2, pad_and_truncate=False):
+def get_audio_video_dataset(datafolder, max_length_in_seconds=2, pad_and_truncate=False):
     loader_func = partial(
-        audio_loader,
+        audio_video_loader,
         max_length_in_seconds=max_length_in_seconds,
         pad_and_truncate=pad_and_truncate,
     )

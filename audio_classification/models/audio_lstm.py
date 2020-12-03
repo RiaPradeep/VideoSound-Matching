@@ -3,7 +3,7 @@ import torch.nn as nn
 import numpy as np
 import torch.nn.functional as F
 from .utils import * 
-from .AudioEncoders import cnn as acnn
+from .AudioEncoders import lstm as alstm
 from .VideoEncoders import cnn as vcnn
 
 class Model(nn.Module):
@@ -12,7 +12,7 @@ class Model(nn.Module):
                     kernel_size=(5, 5), padding=(2, 2), stride=(3, 3), out_dim=128):
         super(Model, self).__init__()
         self.video_enc = vcnn.VideoEnc(video_size=video_size[1:], out_dim=128)
-        self.audio_enc = acnn.AudioEnc(audio_size=audio_size[1:], out_dim=128)
+        self.audio_enc = alstm.AudioEnc(audio_size=audio_size[1:], out_dim=128)
         self.out = nn.Linear(out_dim, out_dim)
 
     def forward(self, audio1, audio2, video):

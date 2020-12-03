@@ -1,2 +1,3 @@
 raw/
 trash/
+*/__pycache__/*
