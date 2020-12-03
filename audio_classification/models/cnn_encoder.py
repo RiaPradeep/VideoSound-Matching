@@ -17,6 +17,7 @@ class Model(nn.Module):
 
     def forward(self, audio1, audio2, video):
         b = audio1.shape[0]
+
         audio1_enc = self.audio_enc(audio1)
         audio2_enc = self.audio_enc(audio2)
         video_enc = self.video_enc(video)

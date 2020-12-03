@@ -7,7 +7,6 @@ import os
 import torch
 
 from audio_video_dataset import get_audio_video_dataset
-# from model import Model
 from models.cnn_encoder import Model
 from loss.TripletLoss import VideoMatchingLoss
 import random
@@ -16,7 +15,7 @@ import numpy as np
 from tqdm import tqdm
 
 torch.backends.cudnn.benchmark = True
-data_directory = "raw"
+data_directory = "/work/sbali/WildMix/raw"
 # 7 classes - acoustic guitar, bird, cat, child speech, flute, piano, waterfall
 TRAIN_CLASSES = ["acoustic_guitar", "waterfall", "bird"]
 TEST_CLASSES = ["flute", "child_speech"]
@@ -93,14 +92,16 @@ def main(num_epochs, batch_size):
     )
 
     train_dataloader = torch.utils.data.DataLoader(
-        train_dataset, batch_size=batch_size, shuffle=True, num_workers=8, pin_memory=True
+        train_dataset, batch_size=batch_size, shuffle=True, num_workers=1, pin_memory=True
     )
     test_dataloader = torch.utils.data.DataLoader(
-        test_dataset, batch_size=batch_size, shuffle=True, num_workers=8, pin_memory=True
+        test_dataset, batch_size=batch_size, shuffle=True, num_workers=1, pin_memory=True
     )
     train_dataloader_len = len(train_dataloader)
     model = Model(audio_size = eg_data[0].size(), video_size=eg_data[1].size())
     model = model.to(device)
+    print(model)
+    #exit(0)
     loss_fn = VideoMatchingLoss()
     optimizer = torch.optim.Adam(model.parameters())
 
@@ -186,4 +187,4 @@ if __name__ == "__main__":
     device = "cuda" if torch.cuda.is_available() else "cpu"
     hparams = get_arguments()
     Model = importlib.import_module(f"models.{hparams.model}").Model
-    main(num_epochs=50, batch_size=8)
+    main(num_epochs=50, batch_size=2)
