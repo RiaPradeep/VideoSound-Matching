@@ -15,7 +15,7 @@ import numpy as np
 from tqdm import tqdm
 
 torch.backends.cudnn.benchmark = True
-data_directory = "/work/sbali/WildMix/raw"
+data_directory = "raw"
 # 7 classes - acoustic guitar, bird, cat, child speech, flute, piano, waterfall
 TRAIN_CLASSES = ["acoustic_guitar", "waterfall", "bird"]
 TEST_CLASSES = ["flute", "child_speech"]
@@ -100,8 +100,6 @@ def main(num_epochs, batch_size):
     train_dataloader_len = len(train_dataloader)
     model = Model(audio_size = eg_data[0].size(), video_size=eg_data[1].size())
     model = model.to(device)
-    print(model)
-    #exit(0)
     loss_fn = VideoMatchingLoss()
     optimizer = torch.optim.Adam(model.parameters())
 

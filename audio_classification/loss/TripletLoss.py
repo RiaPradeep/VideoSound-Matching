@@ -14,4 +14,4 @@ class VideoMatchingLoss(torch.nn.Module):
         dist1 = F.pairwise_distance(audio1_enc, video_enc, keepdim=True)
         dist2 = F.pairwise_distance(audio2_enc, video_enc, keepdim=True)
         distances = torch.cat([dist1, dist2], dim=1)
-        return loss, distances
+        return loss.mean(), distances
