@@ -1,3 +1,4 @@
 raw/
 trash/
+*.pyc
 */__pycache__/*
