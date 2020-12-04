@@ -15,7 +15,7 @@ class VideoEnc(nn.Module):
         self.t_dim = v_shape[0]
         self.img_x = v_shape[1]
         self.img_y = v_shape[2]
-        self.resnet = torchvision.models.video.r3d_18(pretrained=False, progress=True)
+        self.resnet = torchvision.models.video.r3d_18(pretrained=True, progress=True)
         self.video_enc = nn.Sequential(
             self.resnet.stem,
             self.resnet.layer1,
