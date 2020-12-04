@@ -31,7 +31,8 @@ class VideoEnc(nn.Module):
                                             nn.MaxPool2d(kernel_size, stride=stride, padding=padding),
                                             nn.BatchNorm2d(in_channels[i+1]),
                                             nn.LeakyReLU(0.2, inplace=False)))
-            
+            torch.nn.init.xavier_uniform_(layers[-1][0].weight)
+
         self.spatial_enc = nn.ModuleList(layers)
         self.temp_enc = nn.LSTM(out_seq_len[0] * out_seq_len[1] * in_channels[-1], hidden_size=hidden_size, num_layers=num_layers, 
                                 batch_first=True, bidirectional=bidirectional)
@@ -52,4 +53,5 @@ class VideoEnc(nn.Module):
         x = x.reshape(b, -1)
 
         x = F.dropout(x, p=self.drop_p, training=self.training)
+
         return self.out(x)

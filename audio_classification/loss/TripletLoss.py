@@ -6,7 +6,7 @@ import torch.nn.functional as F
 class VideoMatchingLoss(torch.nn.Module):
     def __init__(self):
         super(VideoMatchingLoss, self).__init__()
-        self.loss = torch.nn.TripletMarginLoss(margin=128.5)
+        self.loss = torch.nn.TripletMarginLoss(margin=700)
         self.d = nn.PairwiseDistance(p=2)
     
     def forward(self, audio1_enc, audio2_enc, video_enc, label):

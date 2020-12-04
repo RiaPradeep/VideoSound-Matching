@@ -1,3 +1,5 @@
+model_state/*
+*.pt
 raw/
 trash/
 *.pyc

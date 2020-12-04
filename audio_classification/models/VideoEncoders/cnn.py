@@ -6,7 +6,7 @@ from .utils import *
 
 class VideoEnc(nn.Module):
     def __init__(self, video_size=(48, 360, 360),
-                drop_p=0.2, fc_hidden1=128, out_dim=128, num_layers=5, 
+                drop_p=0.2, fc_hidden1=128, out_dim=700, num_layers=3, 
                 kernel_size=(5, 5, 5),  stride=(1, 3, 3), padding=(0, 0, 0),
                 channel1=3):
         super(VideoEnc, self).__init__()
@@ -61,6 +61,6 @@ class VideoEnc(nn.Module):
             x = v_layer(x)
         x = x.view(b, -1)
         x = F.relu(self.fc1(x))
-        x = F.relu(self.fc2(x))
+        x = self.fc2(x)
         x = F.dropout(x, p=self.drop_p, training=self.training)
         return x

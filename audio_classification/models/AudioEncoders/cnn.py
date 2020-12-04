@@ -5,8 +5,8 @@ import torch.nn.functional as F
 from .utils import * 
 
 class AudioEnc(nn.Module):
-    def __init__(self, num_classes=2, audio_size = (257, 690), channel1=2, num_layers=5,
-                    kernel_size=(5, 5), padding=(2, 2), stride=(3, 3), out_dim=128):
+    def __init__(self, num_classes=2, audio_size = (257, 690), channel1=2, num_layers=3,
+                    kernel_size=(5, 5), padding=(2, 2), stride=(3, 3), out_dim=700):
         super(AudioEnc, self).__init__()
         in_channels = [channel1*(2**i) for i in range(num_layers)]
 
@@ -24,6 +24,7 @@ class AudioEnc(nn.Module):
                                             nn.MaxPool2d(kernel_size, stride=stride, padding=padding),
                                             nn.BatchNorm2d(in_channels[i+1]),
                                             nn.LeakyReLU(0.2, inplace=False)))
+            torch.nn.init.xavier_uniform_(layers[-1][0].weight)
             
         self.audio = nn.ModuleList(layers)
         self.out = nn.Linear(in_channels[-1]*out_seq_len[0] * out_seq_len[1], out_dim)
