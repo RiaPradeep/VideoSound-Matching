@@ -92,40 +92,28 @@ def main(num_epochs, batch_size):
     )
 
     train_dataloader = torch.utils.data.DataLoader(
-        train_dataset, batch_size=batch_size, shuffle=True, num_workers=1, pin_memory=True
+        train_dataset, batch_size=batch_size, shuffle=True, num_workers=1, pin_memory=False
     )
     test_dataloader = torch.utils.data.DataLoader(
-        test_dataset, batch_size=batch_size, shuffle=True, num_workers=1, pin_memory=True
+        test_dataset, batch_size=batch_size, shuffle=True, num_workers=1, pin_memory=False
     )
     train_dataloader_len = len(train_dataloader)
     model = Model(audio_size = eg_data[0].size(), video_size=eg_data[1].size())
     model = model.to(device)
     loss_fn = VideoMatchingLoss()
-    optimizer = torch.optim.Adam(model.parameters())
-
+    optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
     with open('results.csv', 'w', newline='') as f:
         writer = csv.writer(f)
         writer.writerow(["epoch", "train loss", "train accuracy", "test loss", "test accuracy"])
         
         for epoch in tqdm(range(num_epochs)):
-            '''
-            total_length = train_dataset.dset1.__len__()
-            
-            list1 = list(range(total_length))
-            list2 = list(range(total_length))
-            train_dataset.labels = (torch.rand(total_length) < 0.5).type(torch.IntTensor)
-            train_dataset.total_length = total_length
-            random.shuffle(list2)
-            train_dataset.comb_list = list(zip(list1, list2))
-            '''
             model.train()
             train_loss = 0
             train_correct = 0
             for sample_idx, (audio1, audio2, video, target) in tqdm(enumerate(train_dataloader)):
                 b = audio1.shape[0]
                 optimizer.zero_grad()
-                # audio1, audio2, video, target = audio1.to(device), audio2.to(device), video.to(device), target.to(device)
-                audio1, video, target = audio1.to(device), video.to(device), target.to(device)
+                audio1, audio2, video, target = audio1.to(device), audio2.to(device), video.to(device), target.to(device)
                 audio1_enc, audio2_enc, video_enc = model(audio1, audio2, video)
                 loss, pred = loss_fn(audio1_enc, audio2_enc, video_enc, target)
                 loss.backward()
@@ -134,7 +122,6 @@ def main(num_epochs, batch_size):
                 train_loss += b * loss.mean().item()
                 predicted = torch.argmin(pred, dim=1)
                 train_correct += (predicted == target).sum().item()
-                print(torch.max(predicted), torch.min(predicted), torch.max(target), torch.min(target))
                 print(
                     f"{epoch:06d}-[{sample_idx + 1}/{train_dataloader_len}]: {loss.mean().item()} : {train_correct}"
                 )
@@ -165,7 +152,6 @@ def main(num_epochs, batch_size):
                     loss, pred = loss_fn(audio1_enc, audio2_enc, video_enc, target)
                     test_loss += b * loss.mean().item()
                     predicted = torch.argmin(pred, dim=1)
-                    print(predicted, target)
                     test_correct += (predicted == target).sum().item()
 
                 print(f"Evaluation loss: {test_loss / test_dataset.__len__()}")

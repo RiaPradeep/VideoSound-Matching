@@ -20,7 +20,9 @@ def audio_video_loader(path, max_length_in_seconds, pad_and_truncate):
     # audio works with pts?
     max_length_in_seconds = 2
     data_class = path.split("/")[1]
-    vframe, aframe, info = torchvision.io.read_video(path, start_pts=0, end_pts=47500 * max_length_in_seconds, pts_unit="pts")
+    vframe, aframe, info = torchvision.io.read_video(path)
+    #print(aframe.size(), vframe.size())
+    #exit(0)
     aframe = aframe[0]
     vframe = vframe.permute(0, 3, 1, 2)
     # current shape of vframe is T, C, H, W
@@ -39,7 +41,8 @@ def audio_video_loader(path, max_length_in_seconds, pad_and_truncate):
     vframe = vframe[:max_length_video].permute(1, 0, 2, 3) # C, T, H, W
     aframe = aframe[:max_length_audio]
     # convert to stft
-    aframe = torch.stft(aframe, n_fft=512).permute(2, 0, 1)
+    # 2, N, T
+    aframe = torch.stft(aframe, n_fft=512, return_complex=False).permute(2, 1, 0)
     return aframe, vframe
 
 

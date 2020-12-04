@@ -18,8 +18,10 @@ class AudioEnc(nn.Module):
         for _ in range(len(in_channels)-1):
             out_seq_len = conv2D_output_size(out_seq_len, padding, kernel_size, stride)
         
+        p = (kernel_size[0]-1)//2
         for i in range(len(in_channels) -1):
-            layers.append(nn.Sequential(nn.Conv2d(in_channels[i], in_channels[i+1], (kernel_size), stride, padding),
+            layers.append(nn.Sequential(nn.Conv2d(in_channels[i], in_channels[i+1], (kernel_size), (1, 1), (p, p)),
+                                            nn.MaxPool2d(kernel_size, stride=stride, padding=padding),
                                             nn.BatchNorm2d(in_channels[i+1]),
                                             nn.LeakyReLU(0.2, inplace=False)))
             

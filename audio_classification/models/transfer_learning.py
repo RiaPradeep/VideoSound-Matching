@@ -13,7 +13,8 @@ class Model(nn.Module):
         super(Model, self).__init__()
         self.video_enc = vtcnn.VideoEnc(video_size[1:], out_dim=128)
         self.audio_enc = acnn.AudioEnc(audio_size[1:], out_dim=128)
-        self.out = nn.Linear(out_dim, out_dim)
+        self.out = nn.Sequential(nn.Linear(out_dim, out_dim),
+                                nn.Sigmoid())
 
     def forward(self, audio1, audio2, video):
         b = audio1.shape[0]
