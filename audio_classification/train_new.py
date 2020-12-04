@@ -65,9 +65,9 @@ class Dataset(torch.utils.data.Dataset):
     a1, v1 = self.dset[first_class][f_item]
     a2, v2 = self.dset[sec_class][s_item]
     if(label==0):
-        return a1, 1, v1, 1-label
+        return a1, 1, v1, 1
     else:
-        return a1, 1, v2, 1-label
+        return a1, 1, v2, 0
 
   def __len__(self):
     return self.total_length
@@ -93,10 +93,10 @@ def main(num_epochs, batch_size):
     )
 
     train_dataloader = torch.utils.data.DataLoader(
-        train_dataset, batch_size=batch_size, shuffle=True, num_workers=1, pin_memory=True
+        train_dataset, batch_size=batch_size, shuffle=True, num_workers=1, pin_memory=False
     )
     test_dataloader = torch.utils.data.DataLoader(
-        test_dataset, batch_size=batch_size, shuffle=True, num_workers=1, pin_memory=True
+        test_dataset, batch_size=batch_size, shuffle=True, num_workers=1, pin_memory=False
     )
     train_dataloader_len = len(train_dataloader)
     model = Model(audio_size = eg_data[0].size(), video_size=eg_data[1].size())
@@ -121,7 +121,10 @@ def main(num_epochs, batch_size):
                 optimizer.step()
                 
                 train_loss += b * loss.mean().item()
-                predicted = pred >= 0.5
+                #pred = pred.cpu()
+                predicted = (pred >= 0.5) * torch.ones(pred.shape).to(device)
+                print(predicted.shape, pred.shape, target.shape)
+
                 #torch.argmin(pred, dim=1)
                 train_correct += (predicted == target).sum().item()
                 print(
@@ -167,4 +170,4 @@ if __name__ == "__main__":
     device = "cuda" if torch.cuda.is_available() else "cpu"
     hparams = get_arguments()
     Model = importlib.import_module(f"models.{hparams.model}").Model
-    main(num_epochs=50, batch_size=2)
+    main(num_epochs=50, batch_size=4)

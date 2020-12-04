@@ -167,4 +167,4 @@ if __name__ == "__main__":
     device = "cuda" if torch.cuda.is_available() else "cpu"
     hparams = get_arguments()
     Model = importlib.import_module(f"models.{hparams.model}").Model
-    main(num_epochs=50, batch_size=1)
+    main(num_epochs=50, batch_size=2)
