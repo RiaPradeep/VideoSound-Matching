@@ -1,0 +1,62 @@
+/work/sbali/miniconda3/envs/project_417/lib/python3.8/site-packages/torchaudio/backend/utils.py:53: UserWarning: "sox" backend is being deprecated. The default backend will be changed to "sox_io" backend in 0.8.0 and "sox" backend will be removed in 0.9.0. Please migrate to "sox_io" backend. Please refer to https://github.com/pytorch/audio/issues/903 for the detail.
+  warnings.warn(
+/work/sbali/miniconda3/envs/project_417/lib/python3.8/site-packages/torchvision/io/video.py:115: UserWarning: The pts_unit 'pts' gives wrong results and will be removed in a follow-up version. Please use pts_unit 'sec'.
+  warnings.warn(
+/work/sbali/miniconda3/envs/project_417/lib/python3.8/site-packages/torch/functional.py:515: UserWarning: The function torch.rfft is deprecated and will be removed in a future PyTorch release. Use the new torch.fft module functions, instead, by importing torch.fft and calling torch.fft.fft or torch.fft.rfft. (Triggered internally at  /opt/conda/conda-bld/pytorch_1603729096996/work/aten/src/ATen/native/SpectralOps.cpp:590.)
+  return _VF.stft(input, n_fft, hop_length, win_length, window,  # type: ignore
+  0%|          | 0/100 [00:00<?, ?it/s]
+0it [00:00, ?it/s][A
+1it [02:02, 122.26s/it][A
+2it [02:13, 88.83s/it] [A
+3it [02:14, 62.55s/it][A
+4it [02:15, 44.05s/it][A
+5it [02:16, 31.18s/it][A
+6it [02:43, 30.00s/it][A
+7it [02:44, 21.38s/it][A
+8it [02:45, 15.25s/it][A
+9it [04:04, 34.22s/it][A
+10it [04:05, 24.21s/it][A
+11it [04:06, 17.32s/it][A
+12it [04:07, 12.39s/it][A
+13it [04:24, 13.81s/it][A
+14it [04:34, 12.84s/it][A
+15it [04:36,  9.36s/it][A
+16it [04:37,  6.83s/it][A
+17it [05:55, 28.16s/it][A
+18it [06:18, 26.65s/it][A
+19it [06:19, 19.02s/it][A
+20it [06:20, 13.59s/it][A
+21it [06:21,  9.88s/it][A
+22it [06:35, 11.07s/it][A
+23it [06:36,  8.11s/it][A
+24it [06:37,  5.94s/it][A
+25it [07:37, 22.20s/it][A
+26it [07:51, 19.63s/it][A
+27it [08:35, 26.89s/it][A
+28it [08:35, 19.09s/it][A
+29it [08:37, 13.74s/it][A
+30it [08:57, 15.61s/it][A
+31it [08:58, 11.31s/it][A
+32it [08:59,  8.19s/it][A
+33it [09:30, 15.05s/it][A
+34it [09:43, 14.44s/it][A
+35it [10:16, 19.88s/it][A
+36it [10:16, 14.18s/it][A
+37it [10:23, 12.02s/it][A
+38it [10:24,  8.68s/it][A
+39it [10:47, 12.86s/it][A
+40it [10:48,  9.29s/it][A
+41it [12:02, 28.84s/it][A
+42it [12:03, 20.45s/it][A
+43it [12:18, 18.76s/it][A
+44it [12:19, 13.41s/it][A
+45it [12:27, 11.79s/it][A
+46it [12:28,  8.52s/it][A
+47it [13:08, 17.94s/it][A
+48it [13:09, 12.83s/it][A
+49it [13:54, 22.55s/it][A
+50it [13:55, 16.05s/it][A
+51it [14:23, 19.59s/it][A
+52it [14:24, 13.99s/it][A
+53it [14:32, 12.23s/it][A
+54it [14:41, 11.50s/it][Aslurmstepd: error: *** JOB 160663 ON compute-1-37 CANCELLED AT 2020-12-06T03:51:44 ***

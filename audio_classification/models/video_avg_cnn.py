@@ -11,6 +11,8 @@ class Model(nn.Module):
                     num_classes=2, channel1=2, channel2=64, channel3=128, 
                     kernel_size=(5, 5), padding=(2, 2), stride=(3, 3), out_dim=128):
         super(Model, self).__init__()
+        print(video_size)
+        exit(0)
         self.video_enc = vcnn_avg.VideoEnc(video_size=video_size[1:], out_dim=128)
         self.audio_enc = acnn.AudioEnc(audio_size=audio_size[1:], out_dim=128)
         self.out = nn.Sequential(nn.Linear(out_dim, out_dim),

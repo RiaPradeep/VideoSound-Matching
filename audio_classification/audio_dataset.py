@@ -11,36 +11,24 @@ from torchvision.datasets import DatasetFolder, ImageFolder
 from os import listdir
 from os.path import isfile, join
 
-def resize_video(video, size=(360, 360), interpolation=2):
-    transform = torchvision.transforms.Resize(size=size)
-    for frame in video:
-        yield transform(frame)
 
-def audio_video_loader(path, max_length_in_seconds, pad_and_truncate):
-    # audio works with pts?
+def audio_loader(path, max_length_in_seconds, pad_and_truncate):
     max_length_in_seconds = 2
     data_class = path.split("/")[1]
     vframe, aframe, info = torchvision.io.read_video(path)
-    old_sample_rate = info['audio_fps'] 
+    old_sample_rate = info['audio_fps']
     sample_rate = 8000
     aframe = torchaudio.transforms.Resample(old_sample_rate, sample_rate)(aframe)
-    aframe = aframe[0]
+    
     #waveform, sample_rate = torchaudio.load(path)
-    vframe = vframe.permute(0, 3, 1, 2)
+    aframe = aframe[0]
     # current shape of vframe is T, C, H, W
     max_length_audio = int(sample_rate * max_length_in_seconds)
-    max_length_video = 24 * max_length_in_seconds # average of 24 fps
-    vframe = torch.stack(list(resize_video(vframe)), dim=0) # T, C, H, W
     if aframe.shape[0] < max_length_audio:
         print("audio short -", path)
-    if vframe.shape[0] < max_length_video:
-        print("video short -", path)
-    # pad if necessery
-    diff_video = max(0, max_length_video-vframe.shape[0])
+
     diff_audio = max(0, (max_length_audio-aframe.shape[0]))
-    vframe = torch.cat([vframe, torch.zeros((diff_video, vframe.shape[1], vframe.shape[2], vframe.shape[3]))], dim=0)
     aframe = torch.cat([aframe, torch.zeros((diff_audio))], dim=0)
-    vframe = vframe[:max_length_video].permute(1, 0, 2, 3) # C, T, H, W
     aframe = aframe[:max_length_audio]
     # convert to stft
     # 2, N, T
@@ -60,9 +48,9 @@ class SingleDataset(torch.utils.data.Dataset):
     def __getitem__(self, idx):
         return self.loader_func(self.all_files[idx])
 
-def get_audio_video_dataset(datafolder, max_length_in_seconds=2, pad_and_truncate=False):
+def get_audio_dataset(datafolder, max_length_in_seconds=2, pad_and_truncate=False):
     loader_func = partial(
-        audio_video_loader,
+        audio_loader,
         max_length_in_seconds=max_length_in_seconds,
         pad_and_truncate=pad_and_truncate,
     )
@@ -71,7 +59,7 @@ def get_audio_video_dataset(datafolder, max_length_in_seconds=2, pad_and_truncat
     class_nums = {
         "acoustic_guitar": 0,
         "car": 1,
-        "engine": 2,
+        "cat": 2,
         "male_speech": 3,
         "bark": 4,
         "faucet": 5

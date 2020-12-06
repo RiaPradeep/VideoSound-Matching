@@ -6,7 +6,7 @@ import os
 
 import torch
 
-from audio_video_dataset import get_audio_video_dataset
+from audio_dataset import get_audio_dataset
 from models.cnn_encoder import Model
 #from loss.TripletLoss import VideoMatchingLoss
 from loss.ContrastiveLoss import VideoMatchingLoss
@@ -36,62 +36,39 @@ class Dataset(torch.utils.data.Dataset):
   def __init__(self, dset, train=False):
     super(Dataset, self).__init__()
     self.dset = dset
-    self.train = train
     #class_combs = list(itertools.combinations(class_list, 2)) # all combinations
     #for c1, c2 in class_combs:
     item = []
     total_length = 0
-    self.len_each = 99
-    self.train_len = int( 99 * 0.8 )
-    self.test_len = 99 - self.train_len
-    if not self.train:
-        for i in range(len(dset)):
-            pts = torch.tensor(np.random.randint(low=0, high=len(self.dset)-1, size=self.test_len))
-            pts = torch.where(pts>=i, pts + 1, pts)
-            for j in range(self.test_len):
-                first_class = i
-                first_item = (first_class, j)
-                if random.random() > 0.5:
-                    sec_class = int(pts[j])
-                    sim = 0
-                else:
-                    sec_class = i
-                    sim = 1
-                sec_item = (sec_class, random.randint(self.train_len, len(self.dset[sec_class])-1))
-                item.append((first_item, sec_item, sim))
+    start = 0 if train else 30
+    end = 30 if train else 50
+    for i in range(len(dset)):
+        pts = torch.tensor(np.random.randint(low=0, high=len(dset)-1, size=(end-start+1)))
+        pts = torch.where(pts>=i, pts + 1, pts)
+        for j in range(start, end):
+            first_class = i
+            first_item = (first_class, j)
+            if random.random() > 0.5:
+                sec_class = int(pts[end-start-1])
+                sim = 0
+            else:
+                sec_class = i
+                sim = 1
+            sec_item = (sec_class, random.randint(start, end-1))
+            item.append((first_item, sec_item, sim))
+            total_length += 1
     
     self.item = item
-    cur_len = self.train_len if self.train else self.test_len
-    self.total_length = cur_len * len(self.dset)
+    self.total_length = total_length
 
 
   def __getitem__(self, index):
-    if self.train:
-        cur_class = index //self.len_each
-        cur_id = index % self.len_each
-        first_item = self.dset[cur_class][cur_id]
-        pt = torch.tensor(np.random.randint(low=0, high=len(self.dset)-1, size=1))
-        pt = torch.where(pt>=cur_class, pt + 1, pt)
-        if random.random() > 0.5:
-            sec_class = int(pt[0])
-            label = 0
-        else:
-            sec_class = cur_class
-            label = 1
-        sec_item_num = random.randint(self.train_len, len(self.dset[sec_class])-1)
-        a1, v1 = first_item
-        a2, v2 = self.dset[sec_class][sec_item_num]
-        return a1, 1, v1, label
-    else:
-        label = self.item[index][2]
-        first_class, f_item = self.item[index][0]
-        sec_class, s_item = self.item[index][1]
-        a1, v1 = self.dset[first_class][f_item]
-        a2, v2 = self.dset[sec_class][s_item]
-        if(label==0):
-            return a1, 1, v1, 1
-        else:
-            return a1, 1, v2, 0
+    label = self.item[index][2]
+    first_class, f_item = self.item[index][0]
+    sec_class, s_item = self.item[index][1]
+    a1, _ = self.dset[first_class][f_item]
+    a2, _ = self.dset[sec_class][s_item]
+    return a1, a2, label
 
   def __len__(self):
     return self.total_length
@@ -99,28 +76,25 @@ class Dataset(torch.utils.data.Dataset):
 def main(num_epochs, batch_size):
     torch.device(device)
 
-    dataset = get_audio_video_dataset(
+    dataset = get_audio_dataset(
         data_directory, max_length_in_seconds=1, pad_and_truncate=True
     )
 
     #why is there double indexing
     eg_data = dataset[0][0]
     '''
-    dataset = Dataset(dataset)
+    dataset = Dataset(dataset, train=True)
     dataset_len = len(dataset)
     train_len = round(dataset_len * 0.8)
     test_len = dataset_len - train_len
-    '''
     #, Dataset(test_split)
-    train_dataset = Dataset(dataset, True)
-    test_dataset = Dataset(dataset)
 
-    '''
     train_dataset, test_dataset = torch.utils.data.random_split(
         dataset, [int(train_len), int(test_len)]
     )
     '''
-
+    train_dataset = Dataset(dataset, train=True)
+    test_dataset = Dataset(dataset)
     train_dataloader = torch.utils.data.DataLoader(
         train_dataset, batch_size=batch_size, shuffle=True, num_workers=8, pin_memory=False
     )
@@ -128,14 +102,11 @@ def main(num_epochs, batch_size):
         test_dataset, batch_size=batch_size, shuffle=True, num_workers=8, pin_memory=False
     )
     train_dataloader_len = len(train_dataloader)
-    model = Model(audio_size = eg_data[0].size(), video_size=eg_data[1].size())
+    model = Model(audio_size = eg_data[0].size())
     model = model.to(device)
-    if hparams.model == "cnn_encoder":
-        checkpt = torch.load("/work/sbali/VideoSound-Matching/audio_classification/model_state/cnn_encoder.pt")
-        model.load_state_dict(checkpt)
-    elif hparams.model == "audio_lstm":
-        checkpt = torch.load("/work/sbali/VideoSound-Matching/audio_classification/model_state/audio_lstm.pt")
-        model.load_state_dict(checkpt)
+    #checkpt = torch.load("/work/sbali/VideoSound-Matching/audio_classification/model_state/audio_only_cnn.pt")
+    #print(checkpt)
+    #model.load_state_dict(checkpt)
     loss_fn = VideoMatchingLoss().to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
     with open('results.csv', 'w', newline='') as f:
@@ -146,19 +117,17 @@ def main(num_epochs, batch_size):
             model.train()
             train_loss = 0
             train_correct = 0
-            for sample_idx, (audio1, audio2, video, target) in tqdm(enumerate(train_dataloader)):
+            for sample_idx, (audio1, audio2, target) in tqdm(enumerate(train_dataloader)):
                 b = audio1.shape[0]
                 optimizer.zero_grad()
-                audio1, audio2, video, target = audio1.to(device), audio2, video.to(device), target.to(device)
-                audio1_enc, video_enc = model(audio1, video)
-                loss, pred = loss_fn(audio1_enc, video_enc, target)
+                audio1, audio2, target = audio1.to(device), audio2.to(device), target.to(device)
+                audio1_enc, audio2_enc = model(audio1, audio2)
+                loss, pred = loss_fn(audio1_enc, audio2_enc, target)
                 loss.backward()
                 optimizer.step()
-                
                 train_loss += b * loss.mean().item()
-                #pred = pred.cpu()
                 predicted = (pred >= 0.5) * torch.ones(pred.shape).to(device)
-                #torch.argmin(pred, dim=1)
+                print(torch.min(predicted), torch.max(predicted))
                 train_correct += (predicted == target).sum().item()
                 print(
                     f"{epoch:06d}-[{sample_idx + 1}/{train_dataloader_len}]: {loss.mean().item()} : {train_correct}"
@@ -177,11 +146,11 @@ def main(num_epochs, batch_size):
             test_loss = 0
             test_correct = 0
             with torch.no_grad():
-                for sample_idx, (audio1, audio2, video, target) in tqdm(enumerate(test_dataloader)):
+                for sample_idx, (audio1, audio2, target) in tqdm(enumerate(test_dataloader)):
                     b = audio1.shape[0]
-                    audio1, audio2, video, target = audio1.to(device), audio2, video.to(device), target.to(device)
-                    audio1_enc, video_enc = model(audio1, video)
-                    loss, pred = loss_fn(audio1_enc, video_enc, target)
+                    audio1, audio2, target = audio1.to(device), audio2.to(device), target.to(device)
+                    audio1_enc, audio2_enc = model(audio1, audio2)
+                    loss, pred = loss_fn(audio1_enc, audio2_enc, target)
                     test_loss += b * loss.mean().item()
                     predicted = (pred >= 0.5) * torch.ones(pred.shape).to(device)
                     test_correct += (predicted == target).sum().item()
@@ -203,4 +172,4 @@ if __name__ == "__main__":
     device = "cuda" if torch.cuda.is_available() else "cpu"
     hparams = get_arguments()
     Model = importlib.import_module(f"models.{hparams.model}").Model
-    main(num_epochs=100, batch_size=4)
+    main(num_epochs=100, batch_size=8)

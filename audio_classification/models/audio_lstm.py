@@ -16,12 +16,11 @@ class Model(nn.Module):
         self.out = nn.Sequential(nn.Linear(out_dim, out_dim),
                                 nn.Sigmoid())
 
-    def forward(self, audio1, audio2, video):
+    def forward(self, audio1, video):
         b = audio1.shape[0]
         audio1_enc = self.audio_enc(audio1)
-        audio2_enc = self.audio_enc(audio2)
+        audio1_out = self.out(audio1_enc)
         video_enc = self.video_enc(video)
         video_out = self.out(video_enc)
-        audio1_out = self.out(audio1_enc)
-        audio2_out = self.out(audio2_enc)
-        return audio1_out, audio2_out, video_out
+        
+        return audio1_out, video_out

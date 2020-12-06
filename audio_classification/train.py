@@ -9,7 +9,7 @@ import torch
 from audio_video_dataset import get_audio_video_dataset
 from models.cnn_encoder import Model
 #from loss.TripletLoss import VideoMatchingLoss
-from loss.ContrastiveLoss import VideoMatchingLoss
+from loss.TripletLoss import VideoMatchingLoss
 import random
 import itertools
 import numpy as np
@@ -40,8 +40,8 @@ class Dataset(torch.utils.data.Dataset):
     #for c1, c2 in class_combs:
     item = []
     total_length = 0
-    for i in range(7):
-        pts = torch.tensor(np.random.randint(low=0, high=6, size=len(dset[i])))
+    for i in range(len(dset)):
+        pts = torch.tensor(np.random.randint(low=0, high=len(dset)-1, size=len(dset[i])))
         pts = torch.where(pts>=i, pts + 1, pts)
         for j in range(len(dset[i])):
             first_class = i
@@ -101,8 +101,9 @@ def main(num_epochs, batch_size):
     train_dataloader_len = len(train_dataloader)
     model = Model(audio_size = eg_data[0].size(), video_size=eg_data[1].size())
     model = model.to(device)
+
     loss_fn = VideoMatchingLoss()
-    optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
+    optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
     with open('results.csv', 'w', newline='') as f:
         writer = csv.writer(f)
         writer.writerow(["epoch", "train loss", "train accuracy", "test loss", "test accuracy"])
