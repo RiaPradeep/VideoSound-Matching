@@ -31,6 +31,8 @@ flute - 102
 piano - 99
 waterfall - 75
 """
+random.seed(10417) 
+torch.random.manual_seed(10617) 
 
 class Dataset(torch.utils.data.Dataset):
   def __init__(self, dset, train=False):
