@@ -20,8 +20,13 @@ class VideoMatchingLoss(torch.nn.Module):
         super(VideoMatchingLoss, self).__init__()
         self.loss_class =  nn.BCELoss()
         self.d = nn.PairwiseDistance(p=2)
+        self.cos = nn.CosineSimilarity()
     
-    def forward(self, pred, dummy, label):
+    def forward(self, pred, audio, label, l=0.1):
         loss_1 = self.loss_class(pred, label.view(-1, 1).type(torch.float32)) 
+        cosine = self.cos(audio[0], audio[1])
+        loss_21 = label * (1- cosine)
+        loss_22 = (1-label) * torch.relu(cosine - 0.2)
+        loss = loss_21 + loss_22 + l * loss_1
         #print(torch.min(pred), torch.max(pred)) 
-        return loss_1.mean(), pred.reshape(-1)
+        return loss.mean(), pred.reshape(-1)

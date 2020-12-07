@@ -18,12 +18,15 @@ def resize_video(video, size=(360, 360), interpolation=2):
 
 def audio_video_loader(path, max_length_in_seconds, pad_and_truncate):
     # audio works with pts?
-    max_length_in_seconds = 2
     data_class = path.split("/")[1]
-    vframe, aframe, info = torchvision.io.read_video(path)
+    vframe, aframe, info = torchvision.io.read_video(path, start_pts=0, end_pts=47500 * max_length_in_seconds, pts_unit="pts")
+    if 'audio_fps' not in info:
+        print(path)
+        pass
     old_sample_rate = info['audio_fps'] 
-    sample_rate = 8000
-    aframe = torchaudio.transforms.Resample(old_sample_rate, sample_rate)(aframe)
+    sample_rate = old_sample_rate
+    #sample_rate = 8000
+    #aframe = torchaudio.transforms.Resample(old_sample_rate, sample_rate)(aframe)
     aframe = aframe[0]
     #waveform, sample_rate = torchaudio.load(path)
     vframe = vframe.permute(0, 3, 1, 2)
@@ -68,17 +71,23 @@ def get_audio_video_dataset(datafolder, max_length_in_seconds=2, pad_and_truncat
     )
     
     dataset_idx = {}
-    class_nums = {
-        "acoustic_guitar": 0,
-        "car": 1,
-        "engine": 2,
-        "male_speech": 3,
-        "bark": 4,
-        "faucet": 5
-    }
+    class_nums = ["acoustic_guitar", "cowbell", "knock", 
+                    "applause", "duck", 
+                    "tearing",
+                    "telephone_bell_ring", 
+                    "male_speech", "bark", 
+                    "typing", "faucet", "piano", 
+                    "bird", "vacuum_cleaner", "rain",
+                    "water", "raindrop", "saxophone", "writing"]
     
     dataset = {}
+    i = 0
     for c in class_nums:
-        dataset[class_nums[c]] = SingleDataset(join(datafolder, c), loader_func)
-
+        d = SingleDataset(join(datafolder, c), loader_func)
+        if len(d) >= 99:
+            dataset[i] = d
+            print(c)
+            i += 1
+        if i==6:
+            break 
     return dataset

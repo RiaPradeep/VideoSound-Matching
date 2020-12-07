@@ -15,7 +15,7 @@ class VideoEnc(nn.Module):
                 bidirectional=True, kernel_size=(5, 5),  stride=(3, 3), padding=(1, 1),
                 channel1=3):
         super(VideoEnc, self).__init__()
-        in_channels = [channel1] + [8 * ((i+1)) for i in range(num_layers)]
+        in_channels = [channel1] + [16 * ((i+1)) for i in range(num_layers)]
         self.t_dim = video_size[0]
         self.img_x = video_size[1]
         self.img_y = video_size[2]

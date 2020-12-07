@@ -3,17 +3,17 @@ import torch.nn as nn
 import numpy as np
 import torch.nn.functional as F
 from .utils import * 
-from .AudioEncoders import cnn as acnn
+from .AudioEncoders import transformer as tnn
 from .VideoEncoders import cnn as vcnn
 
 class Model(nn.Module):
     def __init__(self, audio_size = (1, 257, 690), video_size=(1, 48, 360, 360),
                     num_classes=2, channel1=2, channel2=64, channel3=128, 
-                    kernel_size=(5, 5), padding=(2, 2), stride=(3, 3), out_dim=300,
+                    kernel_size=(5, 5), padding=(2, 2), stride=(3, 3), out_dim=128,
                     loss_type='bce'):
         super(Model, self).__init__()
         self.video_enc = vcnn.VideoEnc(video_size=video_size[1:], out_dim=out_dim)
-        self.audio_enc = acnn.AudioEnc(audio_size=audio_size[1:], out_dim=out_dim)
+        self.audio_enc = tnn.AudioEnc(audio_size=audio_size[1:], out_dim=out_dim)
         self.out = nn.Sequential(nn.Linear(out_dim, out_dim))
         self.linear = nn.Sequential(nn.Linear(2*out_dim, 1),
                                     nn.Sigmoid())

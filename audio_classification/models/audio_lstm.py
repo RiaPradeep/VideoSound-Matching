@@ -13,8 +13,9 @@ class Model(nn.Module):
         super(Model, self).__init__()
         self.video_enc = vcnn.VideoEnc(video_size=video_size[1:], out_dim=128)
         self.audio_enc = alstm.AudioEnc(audio_size=audio_size[1:], out_dim=128)
-        self.out = nn.Sequential(nn.Linear(out_dim, out_dim),
-                                nn.Sigmoid())
+        self.out = nn.Sequential(nn.Linear(out_dim, out_dim))
+        self.linear = nn.Sequential(nn.Linear(256, 1),
+                                    nn.Sigmoid())
 
     def forward(self, audio1, video):
         b = audio1.shape[0]
@@ -22,5 +23,8 @@ class Model(nn.Module):
         audio1_out = self.out(audio1_enc)
         video_enc = self.video_enc(video)
         video_out = self.out(video_enc)
-        
-        return audio1_out, video_out
+        output = torch.cat((video_out, audio1_out), 1).to(video_enc.device)
+        pred = self.linear(output)
+        #output = (video_out - audio1_out).pow(2)
+        #pred = self.linear(output)
+        return pred, None

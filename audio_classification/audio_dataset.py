@@ -11,15 +11,50 @@ from torchvision.datasets import DatasetFolder, ImageFolder
 from os import listdir
 from os.path import isfile, join
 
+import matplotlib.pyplot as plt
+import librosa.display
+
+import numpy as np
+import pandas as pd
+import librosa
+from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
+
+
+def display(spect, sample_rate, y_axis='mel',x_axis='time', i="0"):
+    plt.figure(figsize=(12, 4))
+    ax = plt.axes()
+    ax.set_axis_off()
+    plt.set_cmap('hot')    
+    db_data = librosa.power_to_db(np.abs(spect)**2, ref=np.max)
+    librosa.display.specshow(db_data, sr=sample_rate, y_axis=y_axis, x_axis=x_axis)
+    plt.colorbar()
+    plt.savefig(i+"out.png", bbox_inches='tight', transparent=True, pad_inches=0.0 )
+    plt.close()
+
+def create_composite(tensor):
+    real = tensor[0].numpy().T
+    imag = tensor[1].numpy().T
+    composite = real + 1j * imag
+    return composite
+
+
+def visualize_input(tensor, sample_rate, i):
+    composite = create_composite(tensor)
+    fig = plt.figure(figsize=(3, 1))
+    plt.subplot(1, 1, 1)
+    display(composite, sample_rate=sample_rate,i=i)
 
 def audio_loader(path, max_length_in_seconds, pad_and_truncate):
     max_length_in_seconds = 2
-    data_class = path.split("/")[1]
+    data_class = path.split("/")[-2]
+    max_length_in_seconds=4
     vframe, aframe, info = torchvision.io.read_video(path)
     old_sample_rate = info['audio_fps']
+
+  
     sample_rate = 8000
     aframe = torchaudio.transforms.Resample(old_sample_rate, sample_rate)(aframe)
-    
+
     #waveform, sample_rate = torchaudio.load(path)
     aframe = aframe[0]
     # current shape of vframe is T, C, H, W
@@ -33,6 +68,8 @@ def audio_loader(path, max_length_in_seconds, pad_and_truncate):
     # convert to stft
     # 2, N, T
     aframe = torch.stft(aframe, n_fft=512, return_complex=False).permute(2, 1, 0)
+    #visualize_input(aframe, sample_rate, data_class + path.split("/")[-1])
+    #exit(0)
     return aframe, vframe
 
 
@@ -56,17 +93,23 @@ def get_audio_dataset(datafolder, max_length_in_seconds=2, pad_and_truncate=Fals
     )
     
     dataset_idx = {}
-    class_nums = {
-        "acoustic_guitar": 0,
-        "car": 1,
-        "cat": 2,
-        "male_speech": 3,
-        "bark": 4,
-        "faucet": 5
-    }
+    class_nums = ["acoustic_guitar", "cowbell", "knock", 
+                    "applause", "duck", 
+                    "tearing", 
+                    "telephone_bell_ring", 
+                    "male_speech", "bark", 
+                    "typing", "faucet", "piano", 
+                    "bird", "vacuum_cleaner", "rain",
+                    "water", "raindrop", "saxophone", "writing"]
     
     dataset = {}
+    i = 0
     for c in class_nums:
-        dataset[class_nums[c]] = SingleDataset(join(datafolder, c), loader_func)
-
+        d = SingleDataset(join(datafolder, c), loader_func)
+        if len(d) >= 99:
+            dataset[i] = d
+            print(c)
+            i += 1
+        if i==15:
+            break 
     return dataset
