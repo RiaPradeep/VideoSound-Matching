@@ -55,7 +55,7 @@ class Dataset(torch.utils.data.Dataset):
             for j in range(self.dset_len):
                 first_class = i
                 first_item = (first_class, j)
-                if random.random() > 0.5:
+                if cur_id %2 == 0:
                     sec_class = int(pts[j])
                     sim = 0
                 else:
@@ -76,7 +76,7 @@ class Dataset(torch.utils.data.Dataset):
         first_item = self.dset[cur_class][cur_id]
         pt = torch.tensor(np.random.randint(low=0, high=len(self.dset)-1, size=1))
         pt = torch.where(pt>=cur_class, pt + 1, pt)
-        if random.random() > 0.5:
+        if cur_id %2 == 0:
             sec_class = int(pt[0])
             label = 0
         else:

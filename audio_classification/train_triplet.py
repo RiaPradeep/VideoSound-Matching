@@ -44,7 +44,7 @@ class Dataset(torch.utils.data.Dataset):
     self.len_each = 99
     self.train_len = int( 99 * 0.8 )
     self.test_len = 99 - self.train_len
-    if not self.train:
+    if True:
         for i in range(len(dset)):
             pts = torch.tensor(np.random.randint(low=0, high=len(self.dset)-1, size=self.test_len))
             pts = torch.where(pts>=i, pts + 1, pts)
@@ -62,7 +62,7 @@ class Dataset(torch.utils.data.Dataset):
 
 
   def __getitem__(self, index):
-    if self.train:
+    if False:
         cur_class = index //self.len_each
         cur_id = index % self.len_each
         pt = torch.tensor(np.random.randint(low=0, high=len(self.dset)-1, size=1))

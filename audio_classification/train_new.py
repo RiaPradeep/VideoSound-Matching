@@ -117,15 +117,7 @@ def main(num_epochs, batch_size):
     train_dataloader_len = len(train_dataloader)
     model = Model(audio_size = eg_data[0].size(), video_size=eg_data[1].size())
     model = model.to(device)
-    '''
-    if hparams.model == "cnn_encoder":
-        checkpt = torch.load("/work/sbali/VideoSound-Matching/audio_classification/model_state/cnn_encoder.pt")
-        model.load_state_dict(checkpt)
 
-    elif hparams.model == "audio_lstm":
-        checkpt = torch.load("/work/sbali/VideoSound-Matching/audio_classification/model_state/audio_lstm.pt")
-        model.load_state_dict(checkpt)
-    '''
     loss_fn = VideoMatchingLoss().to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
     with open('results.csv', 'w', newline='') as f:
