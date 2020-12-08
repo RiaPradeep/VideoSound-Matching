@@ -21,6 +21,7 @@ def audio_video_loader(path, max_length_in_seconds, pad_and_truncate):
     vframe, aframe, info = torchvision.io.read_video(path, start_pts=0, end_pts=47500 * max_length_in_seconds, pts_unit="pts")
     if 'audio_fps' not in info:
         print(path)
+        exit(0)
         pass
     old_sample_rate = info['audio_fps'] 
     sample_rate = old_sample_rate
@@ -65,14 +66,14 @@ def get_audio_video_dataset(datafolder, max_length_in_seconds=2, pad_and_truncat
     )
     
     dataset_idx = {}
-    class_nums = ["bark", "applause", "baby_laughter"]
+    #  class_nums = ["acoustic_guitar", "bird", "child_speech", "flute", "piano"]
+    # ["acoustic_guitar", "bird", "child_speech", "flute", "piano"]
+    class_nums = ["applause", "baby_laughter", "bark"] + ["acoustic_guitar", "bird", "child_speech", "flute", "piano"]
     dataset = {}
     i = 0
     for c in class_nums:
         d = SingleDataset(join(datafolder, c), loader_func)
-        if len(d) >= 99:
-            dataset[i] = d
-            print(c)
-            i += 1
+        dataset[i] = d
+        i += 1
     return dataset
 

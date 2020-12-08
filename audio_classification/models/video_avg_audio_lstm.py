@@ -46,9 +46,9 @@ class Model(nn.Module):
         video1_out =  self.out(video1_enc)
         video2_enc = self.video_enc(video[1])
         video2_out =  self.out(video2_enc)
-        output = torch.cat((video1_out, audio1_out), 1).to(video2_enc.device)
+        output = torch.cat((video2_out, audio1_out), 1).to(video2_enc.device)
         pred = self.linear(output)
-        return pred, audio1_enc, audio2_enc, video1_out, video2_out
+        return pred, audio1_out, audio2_out, video1_out, video2_out
 
     def forward_cos(self, audio, video):
         audio1_enc = self.audio_enc(audio)
