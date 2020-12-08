@@ -65,7 +65,7 @@ def get_audio_video_dataset(datafolder, max_length_in_seconds=2, pad_and_truncat
     )
     
     dataset_idx = {}
-    class_nums = ["bark", "applause", "bird"]
+    class_nums = ["bark", "applause", "baby_laughter"]
     dataset = {}
     i = 0
     for c in class_nums:

@@ -38,8 +38,6 @@ class Dataset(torch.utils.data.Dataset):
     super(Dataset, self).__init__()
     self.dset = dset
     self.train = train
-    #class_combs = list(itertools.combinations(class_list, 2)) # all combinations
-    #for c1, c2 in class_combs:
     item = []
     self.len_each = 99
     self.train_len = int( 99 * 0.8 )
