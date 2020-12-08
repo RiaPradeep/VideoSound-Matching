@@ -8,7 +8,6 @@ import torch
 
 from audio_video_dataset import get_audio_video_dataset
 from models.cnn_encoder import Model
-#from loss.TripletLoss import VideoMatchingLoss
 from loss.MultiLoss import VideoMatchingLoss
 import random
 import itertools
@@ -106,21 +105,11 @@ def main(num_epochs, batch_size):
 
     #why is there double indexing
     eg_data = dataset[0][0]
-    '''
-    dataset = Dataset(dataset)
-    dataset_len = len(dataset)
-    train_len = round(dataset_len * 0.8)
-    test_len = dataset_len - train_len
-    '''
+
     #, Dataset(test_split)
     train_dataset = Dataset(dataset, True)
     test_dataset = Dataset(dataset)
 
-    '''
-    train_dataset, test_dataset = torch.utils.data.random_split(
-        dataset, [int(train_len), int(test_len)]
-    )
-    '''
 
     train_dataloader = torch.utils.data.DataLoader(
         train_dataset, batch_size=batch_size, shuffle=True, num_workers=1, pin_memory=False
