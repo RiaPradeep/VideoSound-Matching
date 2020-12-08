@@ -1,4 +1,3 @@
-
 import random
 from functools import partial
 import torch.nn.functional as F
@@ -71,14 +70,7 @@ def get_audio_video_dataset(datafolder, max_length_in_seconds=2, pad_and_truncat
     )
     
     dataset_idx = {}
-    class_nums = ["acoustic_guitar", "cowbell", "knock", 
-                    "applause", "duck", 
-                    "tearing",
-                    "telephone_bell_ring", 
-                    "male_speech", "bark", 
-                    "typing", "faucet", "piano", 
-                    "bird", "vacuum_cleaner", "rain",
-                    "water", "raindrop", "saxophone", "writing"]
+    class_nums = ["acoustic_guitar", "bird", "child_speech", "flute", "piano"]
     
     dataset = {}
     i = 0
@@ -88,6 +80,4 @@ def get_audio_video_dataset(datafolder, max_length_in_seconds=2, pad_and_truncat
             dataset[i] = d
             print(c)
             i += 1
-        if i==6:
-            break 
     return dataset

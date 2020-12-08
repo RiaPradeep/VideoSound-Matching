@@ -8,7 +8,8 @@ class AudioEnc(nn.Module):
     def __init__(self, num_classes=2, audio_size = (257, 690), channel1=2, channel2=32, num_layers=3,
                     kernel_size=(5, 5), padding=(2, 2), stride=(3, 3), out_dim=700):
         super(AudioEnc, self).__init__()
-        in_channels = [channel1] + [channel2 * 2 * (i+1) for i in range(num_layers)]
+        # in_channels = [channel1] + [channel2 * 2 * (i+1) for i in range(num_layers)]
+        in_channels = [channel1] + [64, 128, 256]
         #[channel1*(2**i) for i in range(num_layers)]
 
         # channel2, channel3]

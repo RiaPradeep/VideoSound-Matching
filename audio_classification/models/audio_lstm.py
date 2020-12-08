@@ -14,7 +14,11 @@ class Model(nn.Module):
         self.video_enc = vcnn.VideoEnc(video_size=video_size[1:], out_dim=128)
         self.audio_enc = alstm.AudioEnc(audio_size=audio_size[1:], out_dim=128)
         self.out = nn.Sequential(nn.Linear(out_dim, out_dim))
-        self.linear = nn.Sequential(nn.Linear(256, 1),
+        self.linear = nn.Sequential(nn.Linear(2*out_dim, out_dim),
+                                    nn.ReLU(),
+                                    nn.Linear(out_dim, out_dim//2),
+                                    nn.ReLU(),
+                                    nn.Linear(out_dim//2, 1),
                                     nn.Sigmoid())
 
     def forward(self, audio1, video):
