@@ -29,6 +29,4 @@ class Model(nn.Module):
         video_out = self.out(video_enc)
         output = torch.cat((video_out, audio1_out), 1).to(video_enc.device)
         pred = self.linear(output)
-        #output = (video_out - audio1_out).pow(2)
-        #pred = self.linear(output)
         return pred, None

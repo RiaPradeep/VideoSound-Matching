@@ -1,5 +1,7 @@
 *.sh
 *.out
+slurm/
+train_files/
 model_state/*
 *.pt
 raw/
