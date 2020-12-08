@@ -6,7 +6,7 @@ from .utils import *
 
 class VideoEnc(nn.Module):
     def __init__(self, video_size=(48, 360, 360),
-                drop_p=0.2, fc_hidden1=128, out_dim=700, num_layers=2, 
+                drop_p=0.2, fc_hidden1=128, out_dim=700, num_layers=3, 
                 kernel_size=(5, 5, 5),  stride=(1, 3, 3), padding=(0, 0, 0),
                 channel1=3):
         super(VideoEnc, self).__init__()
@@ -18,7 +18,8 @@ class VideoEnc(nn.Module):
         self.drop_p = drop_p
         p = (kernel_size[1]-stride[1])//2
         padding = (p, p, p)
-        in_channels = [channel1] + [channel1*32*(i+1) for i in range(num_layers)]
+        # in_channels = [channel1] + [64*(i+1) for i in range(num_layers)]
+        in_channels = [channel1] + [64, 128, 256]
         in_channels += [channel1*4*(i+1) for i in range(num_layers, num_layers+1)]
         layers = []
         out_shape = video_size
