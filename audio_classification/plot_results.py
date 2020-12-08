@@ -11,12 +11,15 @@ def get_data(resfile):
         train_acc = []
         test_loss = []
         test_acc = []
+        epoch = 0
         for row in reader:
-            epochs.append(int(row[0]) + 1)
+            print(row)
+            epochs.append(epoch)
             train_loss.append(float(row[1]))
             train_acc.append(float(row[2]))
             test_loss.append(float(row[3]))
             test_acc.append(float(row[4]))
+            epoch += 1
     
         return (epochs, train_loss, train_acc, test_loss, test_acc)
 
@@ -44,7 +47,7 @@ def plot_acc(epochs, train_acc, test_acc, outfile):
     plt.clf()
 
 if __name__ == '__main__':
-    epochs, train_loss, train_acc, test_loss, test_acc = get_data("results_base_final.csv")
+    epochs, train_loss, train_acc, test_loss, test_acc = get_data("results_bce_video_transformer.csv")
 
     plot_loss(epochs, train_loss, test_loss, "base_loss.png")
     plot_acc(epochs, train_acc, test_acc, "base_acc.png")

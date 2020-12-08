@@ -39,7 +39,7 @@ class AudioEnc(nn.Module):
         n = x.size(2)
         # b, 2, n, m => n, b, 2, m => n, b, 2m
         x = x.permute(2, 0, 1, 3).reshape(n, b, -1)
-        x = self.encoder(x) * math.sqrt(self.dmodel)
+        x = torch.relu(self.encoder(x)) * math.sqrt(self.dmodel)
         x = self.pos_encoder(x)
         # n, b, 
         encoded = torch.relu(self.transformer_encoder(x, self.src_mask))

@@ -1,14 +1,10 @@
 import argparse
 import importlib
-
 import csv
 import os
-
 import torch
-
 from audio_video_dataset import get_audio_video_dataset
 from models.cnn_encoder import Model
-#from loss.TripletLoss import VideoMatchingLoss
 from loss.CosLoss import VideoMatchingLoss
 import random
 import itertools
@@ -55,7 +51,7 @@ class Dataset(torch.utils.data.Dataset):
             for j in range(self.dset_len):
                 first_class = i
                 first_item = (first_class, j)
-                if cur_id %2 == 0:
+                if j %2 == 0:
                     sec_class = int(pts[j])
                     sim = 0
                 else:
@@ -133,8 +129,8 @@ def main(num_epochs, batch_size):
     model = model.to(device)
 
     loss_fn = VideoMatchingLoss().to(device)
-    optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
-    with open('results.csv', 'w', newline='') as f:
+    optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
+    with open(f'results_cos_{hparams.model}.csv', 'w', newline='') as f:
         writer = csv.writer(f)
         writer.writerow(["epoch", "train loss", "train accuracy", "test loss", "test accuracy"])
         
@@ -164,7 +160,7 @@ def main(num_epochs, batch_size):
             print(f"Train accuracy: {100 * train_correct / train_dataset.__len__()}")
 
             # Save the model after every epoch (just in case end before num_epochs epochs)
-            torch.save(model.state_dict(), f"model_state/cos{hparams.model}.pt")
+            torch.save(model.state_dict(), f"/work/sbali/VideoSound-Matching/audio_classification/model_state/cos{hparams.model}.pt")
 
             total_length = len(test_dataset)
 
@@ -199,4 +195,4 @@ if __name__ == "__main__":
     device = "cuda" if torch.cuda.is_available() else "cpu"
     hparams = get_arguments()
     Model = importlib.import_module(f"models.{hparams.model}").Model
-    main(num_epochs=100, batch_size=2)
+    main(num_epochs=25, batch_size=2)

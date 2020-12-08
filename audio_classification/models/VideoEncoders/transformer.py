@@ -34,7 +34,7 @@ class VideoEnc(nn.Module):
         t = x.size(2)
         x = x.permute(0, 2, 1, 3, 4)
         x = x.reshape(b*t, x.size(2), x.size(3), x.size(4))
-        x = self.base(x).view(b, t, -1).permute(1, 0, 2)
+        x = torch.relu(self.base(x).view(b, t, -1).permute(1, 0, 2))
         x = self.encode(x)
         x = self.pos_encoder(x)
         encoded = torch.relu(self.transformer_encoder(x, self.src_mask))

@@ -1,4 +1,3 @@
-
 import random
 from functools import partial
 import torch.nn.functional as F
@@ -82,3 +81,4 @@ def get_audio_video_dataset(datafolder, max_length_in_seconds=2, pad_and_truncat
             print(c)
             i += 1
     return dataset
+
