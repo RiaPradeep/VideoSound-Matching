@@ -45,19 +45,19 @@ class Dataset(torch.utils.data.Dataset):
     self.test_len = 99 - self.train_len
     self.dset_len = self.train_len if train else self.test_len
     self.start_pt = 0 if train else self.train_len
-    if not self.train:
+    if True:
         for i in range(len(dset)):
             pts = torch.tensor(np.random.randint(low=0, high=len(self.dset)-1, size=self.dset_len))
             pts = torch.where(pts>=i, pts + 1, pts)
             for j in range(self.dset_len):
                 first_class = i
                 first_item = (first_class, j+self.start_pt)
-                if j%2 == 0:
-                    sec_class = int(pts[j])
-                    sim = 0
-                else:
-                    sec_class = i
-                    sim = 1
+                sec_class = int(pts[j])
+                sim = 0
+                sec_item = (sec_class, random.randint(self.start_pt, self.dset_len + self.start_pt -1 ))
+                item.append((first_item, sec_item, sim))
+                sec_class = i
+                sim = 1
                 sec_item = (sec_class, random.randint(self.start_pt, self.dset_len + self.start_pt -1 ))
                 item.append((first_item, sec_item, sim))
     
@@ -68,7 +68,7 @@ class Dataset(torch.utils.data.Dataset):
 
 
   def __getitem__(self, index):
-    if self.train:
+    if False:
         cur_class = index //self.len_each
         cur_id = index % self.len_each
         first_item = self.dset[cur_class][cur_id]
@@ -93,7 +93,7 @@ class Dataset(torch.utils.data.Dataset):
 
 
   def __len__(self):
-    return self.total_length
+    return self.total_length*2
 
 def main(num_epochs, batch_size):
     torch.device(device)
@@ -128,7 +128,7 @@ def main(num_epochs, batch_size):
         model.load_state_dict(checkpt)
     '''
     loss_fn = VideoMatchingLoss().to(device)
-    optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
+    optimizer = torch.optim.Adam(model.parameters(), lr=hparams.lr)
     with open(f'2multi_{hparams.model}results.csv', 'w', newline='') as f:
         writer = csv.writer(f)
         writer.writerow(["epoch", "train loss", "train accuracy", "test loss", "test accuracy"])
@@ -162,7 +162,7 @@ def main(num_epochs, batch_size):
             print(f"Train accuracy: {100 * train_correct / train_dataset.__len__()}")
 
             # Save the model after every epoch (just in case end before num_epochs epochs)
-            torch.save(model.state_dict(), f"/work/sbali/VideoSound-Matching/audio_classification/model_state/2mult_{hparams.model}.pt")
+            torch.save(model.state_dict(), f"/work/sbali/VideoSound-Matching/audio_classification/model_state/3mult_{hparams.model}.pt")
 
             total_length = len(test_dataset)
 
@@ -195,6 +195,8 @@ def main(num_epochs, batch_size):
 def get_arguments():
     parser = argparse.ArgumentParser(description='Training')
     parser.add_argument('--model', type=str, default='cnn_encoder')
+    parser.add_argument('--lr', type=float, default=1e-4)
+
     return parser.parse_args()
 
 
