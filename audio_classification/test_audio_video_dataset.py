@@ -66,14 +66,20 @@ def get_audio_video_dataset(datafolder, max_length_in_seconds=2, pad_and_truncat
     )
     
     dataset_idx = {}
+    # ["cat", "engine", "saxophone"]
     #  class_nums = ["acoustic_guitar", "bird", "child_speech", "flute", "piano"]
     # ["acoustic_guitar", "bird", "child_speech", "flute", "piano"]
-    class_nums = ["applause", "baby_laughter", "bark"] + ["acoustic_guitar", "bird", "child_speech", "flute", "piano"]
+    class_nums = ["acoustic_guitar", "bird", "child_speech", "flute", "piano"]
     dataset = {}
     i = 0
     for c in class_nums:
+        
         d = SingleDataset(join(datafolder, c), loader_func)
+        if not(len(d)>= 99):
+            print(c)
+            exit(0)
         dataset[i] = d
+        print(len(d), c)
         i += 1
     return dataset
 

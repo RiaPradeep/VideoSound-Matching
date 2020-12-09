@@ -45,14 +45,14 @@ class Dataset(torch.utils.data.Dataset):
     self.test_len = 99 - self.train_len
     self.dset_len = self.train_len if train else self.test_len
     self.start_pt = 0 if train else self.train_len
-    if True:
+    if not self.train:
         for i in range(len(dset)):
             pts = torch.tensor(np.random.randint(low=0, high=len(self.dset)-1, size=self.dset_len))
             pts = torch.where(pts>=i, pts + 1, pts)
             for j in range(self.dset_len):
                 first_class = i
-                first_item = (first_class, j)
-                if j % 2==0:
+                first_item = (first_class, j+self.start_pt)
+                if j%2 == 0:
                     sec_class = int(pts[j])
                     sim = 0
                 else:
@@ -68,13 +68,13 @@ class Dataset(torch.utils.data.Dataset):
 
 
   def __getitem__(self, index):
-    if False:
+    if self.train:
         cur_class = index //self.len_each
         cur_id = index % self.len_each
         first_item = self.dset[cur_class][cur_id]
         pt = torch.tensor(np.random.randint(low=0, high=len(self.dset)-1, size=1))
         pt = torch.where(pt>=cur_class, pt + 1, pt)
-        if cur_id%2 == 0:
+        if random.random() >= 0.5:
             sec_class = int(pt[0])
             label = 0
         else:
@@ -89,7 +89,7 @@ class Dataset(torch.utils.data.Dataset):
         sec_class, s_item = self.item[index][1]
         a1, v1 = self.dset[first_class][f_item]
         a2, v2 = self.dset[sec_class][s_item]
-    return (a1, a1), (v1, v2), label
+    return (a1, a2), (v1, v2), label
 
 
   def __len__(self):
@@ -119,9 +119,17 @@ def main(num_epochs, batch_size):
     train_dataloader_len = len(train_dataloader)
     model = Model(audio_size = eg_data[0].size(), video_size=eg_data[1].size(), loss_type='multi')
     model = model.to(device)
+    '''
+    if hparams.model == 'video_transformer':
+        checkpt = torch.load("/work/sbali/VideoSound-Matching/audio_classification/model_state/mult_video_transformer.pt")
+        model.load_state_dict(checkpt)
+    elif hparams.model == 'video_cnn_lstm':
+        checkpt = torch.load("/work/sbali/VideoSound-Matching/audio_classification/model_state/mult_video_cnn_lstm.pt")
+        model.load_state_dict(checkpt)
+    '''
     loss_fn = VideoMatchingLoss().to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
-    with open(f'multi_{hparams.model}results.csv', 'w', newline='') as f:
+    with open(f'2multi_{hparams.model}results.csv', 'w', newline='') as f:
         writer = csv.writer(f)
         writer.writerow(["epoch", "train loss", "train accuracy", "test loss", "test accuracy"])
         
@@ -154,7 +162,7 @@ def main(num_epochs, batch_size):
             print(f"Train accuracy: {100 * train_correct / train_dataset.__len__()}")
 
             # Save the model after every epoch (just in case end before num_epochs epochs)
-            torch.save(model.state_dict(), f"/work/sbali/VideoSound-Matching/audio_classification/model_state/mult_{hparams.model}.pt")
+            torch.save(model.state_dict(), f"/work/sbali/VideoSound-Matching/audio_classification/model_state/2mult_{hparams.model}.pt")
 
             total_length = len(test_dataset)
 
