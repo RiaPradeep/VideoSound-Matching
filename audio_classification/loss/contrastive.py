@@ -15,9 +15,9 @@ class ContrastiveLoss(nn.Module):
                         (1 + -1 * target).float() * F.relu(self.margin - (distances + self.eps).sqrt()).pow(2))
         return losses.mean() if size_average else losses.sum()
 
-class VideoMatchingLoss(torch.nn.Module):
+class Loss(torch.nn.Module):
     def __init__(self):
-        super(VideoMatchingLoss, self).__init__()
+        super(Loss, self).__init__()
         self.loss_class = ContrastiveLoss()
     
     def forward(self, pred, dummy, label):

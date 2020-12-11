@@ -3,9 +3,9 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
-class VideoMatchingLoss(torch.nn.Module):
+class Loss(torch.nn.Module):
     def __init__(self):
-        super(VideoMatchingLoss, self).__init__()
+        super(Loss, self).__init__()
         self.loss = torch.nn.TripletMarginLoss(margin=128)
         self.d = nn.PairwiseDistance(p=2)
     

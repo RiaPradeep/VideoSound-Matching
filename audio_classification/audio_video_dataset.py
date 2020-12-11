@@ -16,27 +16,26 @@ def resize_video(video, size=(360, 360), interpolation=2):
         yield transform(frame)
 
 def audio_video_loader(path, max_length_in_seconds, pad_and_truncate):
-    # audio works with pts?
-    data_class = path.split("/")[1]
+    # Load video and audio with approximately 1 second in pts (doesn't work with seconds)
     vframe, aframe, info = torchvision.io.read_video(path, start_pts=0, end_pts=47500 * max_length_in_seconds, pts_unit="pts")
     if 'audio_fps' not in info:
-        print(path)
         pass
+
     old_sample_rate = info['audio_fps'] 
     sample_rate = old_sample_rate
-    #sample_rate = 8000
-    #aframe = torchaudio.transforms.Resample(old_sample_rate, sample_rate)(aframe)
+
     aframe = aframe[0]
-    #waveform, sample_rate = torchaudio.load(path)
-    vframe = vframe.permute(0, 3, 1, 2)
-    # current shape of vframe is T, C, H, W
+    vframe = vframe.permute(0, 3, 1, 2) # current shape of vframe is T, C, H, W
+    
     max_length_audio = int(sample_rate * max_length_in_seconds)
     max_length_video = 24 * max_length_in_seconds # average of 24 fps
     vframe = torch.stack(list(resize_video(vframe)), dim=0) # T, C, H, W
+    
     if aframe.shape[0] < max_length_audio:
         print("audio short -", path)
     if vframe.shape[0] < max_length_video:
         print("video short -", path)
+    
     # pad if necessery
     diff_video = max(0, max_length_video-vframe.shape[0])
     diff_audio = max(0, (max_length_audio-aframe.shape[0]))
@@ -44,8 +43,8 @@ def audio_video_loader(path, max_length_in_seconds, pad_and_truncate):
     aframe = torch.cat([aframe, torch.zeros((diff_audio))], dim=0)
     vframe = vframe[:max_length_video].permute(1, 0, 2, 3) # C, T, H, W
     aframe = aframe[:max_length_audio]
-    # convert to stft
-    # 2, N, T
+    
+    # convert to stft (2, N, T)
     aframe = torch.stft(aframe, n_fft=512, return_complex=False).permute(2, 1, 0)
     return aframe, vframe
 
@@ -69,9 +68,8 @@ def get_audio_video_dataset(datafolder, max_length_in_seconds=2, pad_and_truncat
         pad_and_truncate=pad_and_truncate,
     )
     
-    dataset_idx = {}
+    # Training and validation classes
     class_nums = ["acoustic_guitar", "bird", "child_speech", "flute", "piano"]
-    
     dataset = {}
     i = 0
     for c in class_nums:
