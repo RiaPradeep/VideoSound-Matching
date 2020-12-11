@@ -18,7 +18,6 @@ class VideoEnc(nn.Module):
         self.drop_p = drop_p
         p = (kernel_size[1]-stride[1])//2
         padding = (p, p, p)
-        # in_channels = [channel1] + [64*(i+1) for i in range(num_layers)]
         in_channels = [channel1] + [64, 128, 256]
         in_channels += [channel1*4*(i+1) for i in range(num_layers, num_layers+1)]
         layers = []

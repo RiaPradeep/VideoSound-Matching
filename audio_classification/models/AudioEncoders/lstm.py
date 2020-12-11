@@ -16,7 +16,6 @@ class AudioEnc(nn.Module):
         mult_val = 2 if bidirectional else 1
         self.linear = nn.Linear(audio_size[0]*mult_val * hidden_size, out_dim)
 
-    #TODO check x shape- this assumes third is num time frames
     # x is currently b, 2, T, N
     def forward(self, x):
         b = x.size(0)

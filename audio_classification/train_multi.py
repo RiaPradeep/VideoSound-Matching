@@ -8,7 +8,6 @@ import torch
 
 from audio_video_dataset import get_audio_video_dataset
 from models.cnn_encoder import Model
-#from loss.TripletLoss import VideoMatchingLoss
 from loss.MultiLoss import VideoMatchingLoss
 import random
 import itertools
@@ -34,33 +33,38 @@ waterfall - 75
 random.seed(10417) 
 torch.random.manual_seed(10617) 
 
+# /work/sbali/VideoSound-Matching/audio_classification/model_state/mult_video_transformer.pt
 class Dataset(torch.utils.data.Dataset):
   def __init__(self, dset, train=False):
     super(Dataset, self).__init__()
     self.dset = dset
     self.train = train
-    #class_combs = list(itertools.combinations(class_list, 2)) # all combinations
-    #for c1, c2 in class_combs:
     item = []
-    total_length = 0
     self.len_each = 99
     self.train_len = int( 99 * 0.8 )
     self.test_len = 99 - self.train_len
+    self.dset_len = self.train_len if train else self.test_len
+    self.start_pt = 0 if train else self.train_len
     if True:
         for i in range(len(dset)):
-            pts = torch.tensor(np.random.randint(low=0, high=len(self.dset)-1, size=self.test_len))
+            pts = torch.tensor(np.random.randint(low=0, high=len(self.dset)-1, size=self.dset_len))
             pts = torch.where(pts>=i, pts + 1, pts)
-            for j in range(self.test_len):
+            for j in range(self.dset_len):
                 first_class = i
-                first_item = (first_class, j)
+                first_item = (first_class, j+self.start_pt)
                 sec_class = int(pts[j])
                 sim = 0
-                sec_item = (sec_class, random.randint(self.train_len, len(self.dset[sec_class])-1))
+                sec_item = (sec_class, random.randint(self.start_pt, self.dset_len + self.start_pt -1 ))
+                item.append((first_item, sec_item, sim))
+                sec_class = i
+                sim = 1
+                sec_item = (sec_class, random.randint(self.start_pt, self.dset_len + self.start_pt -1 ))
                 item.append((first_item, sec_item, sim))
     
     self.item = item
     cur_len = self.train_len if self.train else self.test_len
-    self.total_length = cur_len * len(self.dset)
+    self.total_length = self.dset_len * len(self.dset)
+    print(self.train, cur_len, len(self.dset))
 
 
   def __getitem__(self, index):
@@ -70,8 +74,12 @@ class Dataset(torch.utils.data.Dataset):
         first_item = self.dset[cur_class][cur_id]
         pt = torch.tensor(np.random.randint(low=0, high=len(self.dset)-1, size=1))
         pt = torch.where(pt>=cur_class, pt + 1, pt)
-        sec_class = int(pt[0])
-        label = 0
+        if random.random() >= 0.5:
+            sec_class = int(pt[0])
+            label = 0
+        else:
+            sec_class = cur_class
+            label = 1
         sec_item_num = random.randint(0, self.train_len)
         a1, v1 = first_item
         a2, v2 = self.dset[sec_class][sec_item_num]
@@ -81,10 +89,11 @@ class Dataset(torch.utils.data.Dataset):
         sec_class, s_item = self.item[index][1]
         a1, v1 = self.dset[first_class][f_item]
         a2, v2 = self.dset[sec_class][s_item]
-    return (a1, a2), (v1, v2)
+    return (a1, a2), (v1, v2), label
+
 
   def __len__(self):
-    return self.total_length
+    return self.total_length*2
 
 def main(num_epochs, batch_size):
     torch.device(device)
@@ -95,21 +104,11 @@ def main(num_epochs, batch_size):
 
     #why is there double indexing
     eg_data = dataset[0][0]
-    '''
-    dataset = Dataset(dataset)
-    dataset_len = len(dataset)
-    train_len = round(dataset_len * 0.8)
-    test_len = dataset_len - train_len
-    '''
+
     #, Dataset(test_split)
     train_dataset = Dataset(dataset, True)
     test_dataset = Dataset(dataset)
 
-    '''
-    train_dataset, test_dataset = torch.utils.data.random_split(
-        dataset, [int(train_len), int(test_len)]
-    )
-    '''
 
     train_dataloader = torch.utils.data.DataLoader(
         train_dataset, batch_size=batch_size, shuffle=True, num_workers=1, pin_memory=False
@@ -120,9 +119,17 @@ def main(num_epochs, batch_size):
     train_dataloader_len = len(train_dataloader)
     model = Model(audio_size = eg_data[0].size(), video_size=eg_data[1].size(), loss_type='multi')
     model = model.to(device)
+    '''
+    if hparams.model == 'video_transformer':
+        checkpt = torch.load("/work/sbali/VideoSound-Matching/audio_classification/model_state/mult_video_transformer.pt")
+        model.load_state_dict(checkpt)
+    elif hparams.model == 'video_cnn_lstm':
+        checkpt = torch.load("/work/sbali/VideoSound-Matching/audio_classification/model_state/mult_video_cnn_lstm.pt")
+        model.load_state_dict(checkpt)
+    '''
     loss_fn = VideoMatchingLoss().to(device)
-    optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
-    with open('results.csv', 'w', newline='') as f:
+    optimizer = torch.optim.Adam(model.parameters(), lr=hparams.lr)
+    with open(f'2multi_{hparams.model}results.csv', 'w', newline='') as f:
         writer = csv.writer(f)
         writer.writerow(["epoch", "train loss", "train accuracy", "test loss", "test accuracy"])
         
@@ -130,19 +137,23 @@ def main(num_epochs, batch_size):
             model.train()
             train_loss = 0
             train_correct = 0
-            for sample_idx, (audio, video) in tqdm(enumerate(train_dataloader)):
+            for sample_idx, (audio, video, target) in tqdm(enumerate(train_dataloader)):
                 b = audio[0].shape[0]
                 optimizer.zero_grad()
                 audio[0], audio[1] = audio[0].to(device), audio[1].to(device)
                 video[0], video[1] = video[0].to(device), video[1].to(device)
-                audio1_enc, audio2_enc, video1_enc, video2_enc = model(audio, video)
-                loss, predicted = loss_fn(audio1_enc, audio2_enc, video1_enc, video2_enc)
+                target = target.to(device)
+                pred, audio1_enc, audio2_enc, video1_enc, video2_enc = model(audio, video)
+                #pred, audio1_enc, audio2_enc, video1_enc, video2_enc, label
+                loss, predicted = loss_fn(pred, audio1_enc, audio2_enc, video1_enc, video2_enc, target)
                 loss.backward()
                 optimizer.step()
                 train_loss += b * loss.mean().item()
                 #pred = pred.cpu()
-                #torch.argmin(pred, dim=1)
-                train_correct += (predicted).sum().item()
+                
+                predicted = (predicted >= 0.5) * torch.ones(predicted.shape).to(device)
+                
+                train_correct += (predicted == target).sum().item()
                 print(
                     f"{epoch:06d}-[{sample_idx + 1}/{train_dataloader_len}]: {loss.mean().item()} : {train_correct}", flush=True
                 )
@@ -151,7 +162,7 @@ def main(num_epochs, batch_size):
             print(f"Train accuracy: {100 * train_correct / train_dataset.__len__()}")
 
             # Save the model after every epoch (just in case end before num_epochs epochs)
-            torch.save(model.state_dict(), f"model_state/mult_{hparams.model}.pt")
+            torch.save(model.state_dict(), f"/work/sbali/VideoSound-Matching/audio_classification/model_state/3mult_{hparams.model}.pt")
 
             total_length = len(test_dataset)
 
@@ -160,14 +171,19 @@ def main(num_epochs, batch_size):
             test_loss = 0
             test_correct = 0
             with torch.no_grad():
-                for sample_idx, (audio, video) in tqdm(enumerate(test_dataloader)):
+                for sample_idx, (audio, video, target) in tqdm(enumerate(test_dataloader)):
                     b = audio[0].shape[0]
                     audio[0], audio[1] = audio[0].to(device), audio[1].to(device)
                     video[0], video[1] = video[0].to(device), video[1].to(device)
-                    audio1_enc, audio2_enc, video1_enc, video2_enc = model(audio, video)
-                    loss, predicted = loss_fn(audio1_enc, audio2_enc, video1_enc, video2_enc)
+                    target = target.to(device)
+                    pred, audio1_enc, audio2_enc, video1_enc, video2_enc = model(audio, video)
+                    #pred, audio1_enc, audio2_enc, video1_enc, video2_enc, label
+                    loss, predicted = loss_fn(pred, audio1_enc, audio2_enc, video1_enc, video2_enc, target)
                     test_loss += b * loss.mean().item()
-                    test_correct += (predicted).sum().item()
+                    print(predicted.shape,  test_dataset.__len__())
+                    predicted = (predicted >= 0.5) * torch.ones(predicted.shape).to(device)
+
+                    test_correct += (predicted == target).sum().item()
 
                 print(f"Evaluation loss: {test_loss / test_dataset.__len__()}")
                 print(f"Evaluation accuracy: {100 * test_correct / test_dataset.__len__()}")
@@ -179,6 +195,8 @@ def main(num_epochs, batch_size):
 def get_arguments():
     parser = argparse.ArgumentParser(description='Training')
     parser.add_argument('--model', type=str, default='cnn_encoder')
+    parser.add_argument('--lr', type=float, default=1e-4)
+
     return parser.parse_args()
 
 
@@ -186,4 +204,4 @@ if __name__ == "__main__":
     device = "cuda" if torch.cuda.is_available() else "cpu"
     hparams = get_arguments()
     Model = importlib.import_module(f"models.{hparams.model}").Model
-    main(num_epochs=100, batch_size=2)
+    main(num_epochs=25, batch_size=2)

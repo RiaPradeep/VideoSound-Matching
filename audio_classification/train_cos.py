@@ -1,14 +1,10 @@
 import argparse
 import importlib
-
 import csv
 import os
-
 import torch
-
 from audio_video_dataset import get_audio_video_dataset
 from models.cnn_encoder import Model
-#from loss.TripletLoss import VideoMatchingLoss
 from loss.CosLoss import VideoMatchingLoss
 import random
 import itertools
@@ -40,30 +36,27 @@ class Dataset(torch.utils.data.Dataset):
     super(Dataset, self).__init__()
     self.dset = dset
     self.train = train
-    #class_combs = list(itertools.combinations(class_list, 2)) # all combinations
-    #for c1, c2 in class_combs:
     item = []
     self.len_each = 99
     self.train_len = int( 99 * 0.8 )
     self.test_len = 99 - self.train_len
     self.dset_len = self.train_len if train else self.test_len
     self.start_pt = 0 if train else self.train_len
-    if True:
+    if True
         for i in range(len(dset)):
             pts = torch.tensor(np.random.randint(low=0, high=len(self.dset)-1, size=self.dset_len))
             pts = torch.where(pts>=i, pts + 1, pts)
             for j in range(self.dset_len):
                 first_class = i
-                first_item = (first_class, j)
-                if cur_id %2 == 0:
-                    sec_class = int(pts[j])
-                    sim = 0
-                else:
-                    sec_class = i
-                    sim = 1
+                first_item = (first_class, j+self.start_pt)
+                sec_class = int(pts[j])
+                sim = 0
                 sec_item = (sec_class, random.randint(self.start_pt, self.dset_len + self.start_pt -1 ))
                 item.append((first_item, sec_item, sim))
-    
+                sec_class = i
+                sim = 1
+                sec_item = (sec_class, random.randint(self.start_pt, self.dset_len + self.start_pt -1 ))
+                item.append((first_item, sec_item, sim))
     self.item = item
     cur_len = self.train_len if self.train else self.test_len
     self.total_length = self.dset_len * len(self.dset)
@@ -76,7 +69,7 @@ class Dataset(torch.utils.data.Dataset):
         first_item = self.dset[cur_class][cur_id]
         pt = torch.tensor(np.random.randint(low=0, high=len(self.dset)-1, size=1))
         pt = torch.where(pt>=cur_class, pt + 1, pt)
-        if cur_id %2 == 0:
+        if random.random()>= 0.5:
             sec_class = int(pt[0])
             label = 0
         else:
@@ -95,7 +88,7 @@ class Dataset(torch.utils.data.Dataset):
 
 
   def __len__(self):
-    return self.total_length
+    return self.total_length * 2
 
 def main(num_epochs, batch_size):
     torch.device(device)
@@ -106,21 +99,11 @@ def main(num_epochs, batch_size):
 
     #why is there double indexing
     eg_data = dataset[0][0]
-    '''
-    dataset = Dataset(dataset)
-    dataset_len = len(dataset)
-    train_len = round(dataset_len * 0.8)
-    test_len = dataset_len - train_len
-    '''
+
     #, Dataset(test_split)
     train_dataset = Dataset(dataset, True)
     test_dataset = Dataset(dataset)
 
-    '''
-    train_dataset, test_dataset = torch.utils.data.random_split(
-        dataset, [int(train_len), int(test_len)]
-    )
-    '''
 
     train_dataloader = torch.utils.data.DataLoader(
         train_dataset, batch_size=batch_size, shuffle=True, num_workers=1, pin_memory=False
@@ -133,8 +116,8 @@ def main(num_epochs, batch_size):
     model = model.to(device)
 
     loss_fn = VideoMatchingLoss().to(device)
-    optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
-    with open('results.csv', 'w', newline='') as f:
+    optimizer = torch.optim.Adam(model.parameters(), lr=hparams.lr)
+    with open(f'2results_cos_{hparams.model}.csv', 'w', newline='') as f:
         writer = csv.writer(f)
         writer.writerow(["epoch", "train loss", "train accuracy", "test loss", "test accuracy"])
         
@@ -164,7 +147,7 @@ def main(num_epochs, batch_size):
             print(f"Train accuracy: {100 * train_correct / train_dataset.__len__()}")
 
             # Save the model after every epoch (just in case end before num_epochs epochs)
-            torch.save(model.state_dict(), f"model_state/cos{hparams.model}.pt")
+            torch.save(model.state_dict(), f"/work/sbali/VideoSound-Matching/audio_classification/model_state/2cos{hparams.model}.pt")
 
             total_length = len(test_dataset)
 
@@ -199,4 +182,4 @@ if __name__ == "__main__":
     device = "cuda" if torch.cuda.is_available() else "cpu"
     hparams = get_arguments()
     Model = importlib.import_module(f"models.{hparams.model}").Model
-    main(num_epochs=100, batch_size=2)
+    main(num_epochs=25, batch_size=4)
