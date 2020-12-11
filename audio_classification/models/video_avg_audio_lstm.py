@@ -11,54 +11,58 @@ class Model(nn.Module):
                     num_classes=2, channel1=2, channel2=64, channel3=128, loss_type='triplet',
                     kernel_size=(5, 5), padding=(2, 2), stride=(3, 3), out_dim=256):
         super(Model, self).__init__()
+        # Independent audio and video encoder models
         self.video_enc = vcnn_avg.VideoEnc(video_size=video_size[1:], out_dim=out_dim)
         self.audio_enc = alstm.AudioEnc(audio_size=audio_size[1:], out_dim=out_dim)
-        self.out = nn.Sequential(nn.Linear(out_dim, out_dim))
-        self.linear = nn.Sequential(nn.Linear(2*out_dim, 1),
+        # Map to common embedding space
+        self.common = nn.Sequential(nn.Linear(out_dim, out_dim))
+        # Predict similarity score
+        self.predict = nn.Sequential(nn.Linear(2*out_dim, 1),
                                     nn.Sigmoid())
         self.sigmoid = nn.Sigmoid()
         self.loss_type = loss_type
 
     def forward_bce(self, audio, video):
-        audio1_enc = self.audio_enc(audio)
-        audio1_out =  self.out(audio1_enc)
+        audio_enc = self.audio_enc(audio)
+        audio_out =  self.common(audio_enc)
         video_enc = self.video_enc(video)
-        video_out = self.out(video_enc)
-        output = torch.cat((video_out, audio1_out), 1).to(video_enc.device)
-        pred = self.linear(output)
+        video_out = self.common(video_enc)
+        output = torch.cat((video_out, audio_out), 1).to(video_enc.device)
+        pred = self.predict(output)
         return pred, None
     
     def forward_trip(self, audio, video):
         audio1_enc = self.audio_enc(audio[0])
-        audio1_out =  self.sigmoid(self.out(audio1_enc))
+        audio1_out =  self.sigmoid(self.common(audio1_enc))
         audio2_enc = self.audio_enc(audio[1])
-        audio2_out =  self.sigmoid(self.out(audio2_enc))
+        audio2_out =  self.sigmoid(self.common(audio2_enc))
         video_enc = self.video_enc(video)
-        video_out =  self.sigmoid(self.out(video_enc))
-        return audio1_enc, audio2_enc, video_out
+        video_out =  self.sigmoid(self.common(video_enc))
+        return audio1_out, audio2_out, video_out
 
     def forward_mult(self, audio, video):
         audio1_enc = self.audio_enc(audio[0])
-        audio1_out =  self.out(audio1_enc)
+        audio1_out =  self.common(audio1_enc)
         audio2_enc = self.audio_enc(audio[1])
-        audio2_out =  self.out(audio2_enc)
+        audio2_out =  self.common(audio2_enc)
         video1_enc = self.video_enc(video[0])
-        video1_out =  self.out(video1_enc)
+        video1_out =  self.common(video1_enc)
         video2_enc = self.video_enc(video[1])
-        video2_out =  self.out(video2_enc)
+        video2_out =  self.common(video2_enc)
         output = torch.cat((video2_out, audio1_out), 1).to(video2_enc.device)
-        pred = self.linear(output)
+        pred = self.predict(output)
         return pred, audio1_out, audio2_out, video1_out, video2_out
 
     def forward_cos(self, audio, video):
-        audio1_enc = self.audio_enc(audio)
-        audio1_out =  self.out(audio1_enc)
+        audio_enc = self.audio_enc(audio)
+        audio_out =  self.common(audio_enc)
         video_enc = self.video_enc(video)
-        video_out = self.out(video_enc)
-        output = torch.cat((video_out, audio1_out), 1).to(video_enc.device)
-        pred = self.linear(output)
-        return pred, (audio1_out, video_out)
+        video_out = self.common(video_enc)
+        output = torch.cat((video_out, audio_out), 1).to(video_enc.device)
+        pred = self.predict(output)
+        return pred, (audio_out, video_out)
 
+    # Call appropriate forward function based on loss type
     def forward(self, audio, video):
         if self.loss_type == 'bce':
             return self.forward_bce(audio, video)

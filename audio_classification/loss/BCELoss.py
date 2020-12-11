@@ -6,8 +6,7 @@ class VideoMatchingLoss(torch.nn.Module):
     def __init__(self):
         super(VideoMatchingLoss, self).__init__()
         self.loss_class = nn.BCELoss()
-
     
     def forward(self, pred, dummy, label):
-        loss_1 = self.loss_class(pred, label.view(-1, 1).type(torch.float32)) 
-        return loss_1.mean(), pred.reshape(-1)
+        loss = self.loss_class(pred, label.view(-1, 1).type(torch.float32)) 
+        return loss.mean(), pred.reshape(-1)

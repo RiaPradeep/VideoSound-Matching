@@ -3,23 +3,30 @@ import torch.nn as nn
 import numpy as np
 import torch.nn.functional as F
 from .utils import * 
-from .AudioEncoders import cnn as acnn
-from .VideoEncoders import cnn_avg as vcnn_avg
+from .AudioEncoders import lstm as alstm
+from .VideoEncoders import cnn_lstm as vlstm
 
 class Model(nn.Module):
     def __init__(self, audio_size = (1, 257, 690), video_size=(1, 48, 360, 360),
-                    num_classes=2, channel1=2, channel2=64, channel3=128, loss_type='triplet',
-                    kernel_size=(5, 5), padding=(2, 2), stride=(3, 3), out_dim=128):
+                    num_classes=2, channel1=2, channel2=64, channel3=128, 
+                    kernel_size=(5, 5), padding=(2, 2), stride=(3, 3), out_dim=128,
+                    loss_type='bce'):
         super(Model, self).__init__()
         # Independent audio and video encoder models
-        self.video_enc = vcnn_avg.VideoEnc(video_size=video_size[1:], out_dim=out_dim)
-        self.audio_enc = acnn.AudioEnc(audio_size=audio_size[1:], out_dim=out_dim)
+        self.video_enc = vlstm.VideoEnc(video_size=video_size[1:], out_dim=out_dim)
+        self.audio_enc = alstm.AudioEnc(audio_size=audio_size[1:], out_dim=out_dim)
         # Map to common embedding space
-        self.common = nn.Sequential(nn.Linear(out_dim, out_dim))
+        self.common = nn.Sequential(nn.ReLU(), 
+                                 nn.Linear(out_dim, out_dim),
+                                 nn.ReLU(),
+                                 nn.Linear(out_dim, out_dim))
         # Predict similarity score
-        self.predict = nn.Sequential(nn.Linear(2*out_dim, 1),
+        self.predict = nn.Sequential(nn.Linear(2*out_dim, out_dim),
+                                    nn.ReLU(),
+                                    nn.Linear(out_dim, out_dim//2),
+                                    nn.ReLU(),
+                                    nn.Linear(out_dim//2, 1),
                                     nn.Sigmoid())
-        self.sigmoid = nn.Sigmoid()
         self.loss_type = loss_type
 
     def forward_bce(self, audio, video):
@@ -49,9 +56,7 @@ class Model(nn.Module):
         video1_out =  self.common(video1_enc)
         video2_enc = self.video_enc(video[1])
         video2_out =  self.common(video2_enc)
-        output = torch.cat((video1_out, audio1_out), 1).to(video2_enc.device)
-        pred = self.predict(output)
-        return pred, audio1_out, audio2_out, video1_out, video2_out
+        return audio1_out, audio2_out, video1_out, video2_out
 
     def forward_cos(self, audio, video):
         audio_enc = self.audio_enc(audio)
@@ -72,4 +77,3 @@ class Model(nn.Module):
             return self.forward_mult(audio, video)
         elif self.loss_type == 'cos':
             return self.forward_cos(audio, video)
-

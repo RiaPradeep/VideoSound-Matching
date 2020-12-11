@@ -11,13 +11,13 @@ class Model(nn.Module):
                     num_classes=2, channel1=2, channel2=64, channel3=128, 
                     kernel_size=(5, 5), padding=(2, 2), stride=(3, 3), out_dim=128):
         super(Model, self).__init__()
-        self.video_enc = vtcnn.VideoEnc(video_size[1:], out_dim=128)
-        self.audio_enc = acnn.AudioEnc(audio_size[1:], out_dim=128)
+        # Independent audio and video encoder models
+        self.video_enc = vtcnn.VideoEnc(video_size[1:], out_dim=out_dim)
+        self.audio_enc = acnn.AudioEnc(audio_size[1:], out_dim=out_dim)
         self.out = nn.Sequential(nn.Linear(out_dim, out_dim),
                                 nn.Sigmoid())
 
     def forward(self, audio1, audio2, video):
-        b = audio1.shape[0]
         audio1_enc = self.audio_enc(audio1)
         audio2_enc = self.audio_enc(audio2)
         video_enc = self.video_enc(video)

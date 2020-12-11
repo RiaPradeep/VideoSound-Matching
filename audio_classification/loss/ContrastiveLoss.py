@@ -4,7 +4,7 @@ import torch.nn.functional as F
 
 
 class ContrastiveLoss(nn.Module):
-    def __init__(self, margin):
+    def __init__(self, margin=2.0):
         super(ContrastiveLoss, self).__init__()
         self.margin = margin
         self.eps = 1e-9
@@ -18,10 +18,8 @@ class ContrastiveLoss(nn.Module):
 class VideoMatchingLoss(torch.nn.Module):
     def __init__(self):
         super(VideoMatchingLoss, self).__init__()
-        self.loss_class =  nn.BCELoss()
-        self.d = nn.PairwiseDistance(p=2)
+        self.loss_class = ContrastiveLoss()
     
     def forward(self, pred, dummy, label):
-        loss_1 = self.loss_class(pred, label.view(-1, 1).type(torch.float32)) 
-        #print(torch.min(pred), torch.max(pred)) 
-        return loss_1.mean(), pred.reshape(-1)
+        loss = self.loss_class(pred, label.view(-1, 1).type(torch.float32)) 
+        return loss.mean(), pred.reshape(-1)
