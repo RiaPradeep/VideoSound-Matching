@@ -21,7 +21,7 @@ This subfolder consists of models for creating the video encodings given the vid
 ## Classification models
 These files are including in the models folders and combine different video and audio encoders to construct the final output. Fusional siamese models are used after the encodings are constructed. 
 
-# LOSS
+# Loss
 In addition to different models, the project tests different losses for training including binary cross entropy, contrastive loss, cosine loss, and triplet loss(usual definitions). in addition we test a new loss-Multi loss specific to this problem that enforces the relations between the different modalities for training. 
 
 
