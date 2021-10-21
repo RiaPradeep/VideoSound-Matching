@@ -10,7 +10,6 @@ import numpy as np
 
 from audio_video_dataset import get_audio_video_dataset
 from models.cnn_encoder import Model
-from loss.bce import Loss
 
 torch.backends.cudnn.benchmark = True
 data_directory = "raw"
